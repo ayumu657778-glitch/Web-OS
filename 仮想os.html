@@ -130,6 +130,7 @@ padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
     <div class="s-grid" id="s-grid"></div>
     <div style="margin-top:20px; border-top:1px solid #ddd; padding-top:15px; text-align:right;">
        
+ 
  <button onclick="location.reload()">🔄 再起動</button>
     </div>
 </div>
@@ -143,6 +144,7 @@ padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
         { id:'calc', n:'電卓', i:'🧮', t:'calc' },
         { id:'note', n:'メモ帳', i:'📝', t:'text' },
       
+ 
   { id:'paint', n:'ペイント', i:'🎨', t:'draw' },
         { id:'set', n:'設定', i:'⚙️', t:'settings' },
         { id:'mail', n:'メール', i:'📧', t:'html', c:'<div class="pad">メールはありません。</div>' },
@@ -151,6 +153,7 @@ padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
         { id:'news', n:'ニュース', i:'📰', t:'web', u:'https://wikipedia.org' },
         { id:'weather', n:'天気', i:'☀️', t:'web', u:'https://www.windy.com' },
         { 
+ 
 id:'video', n:'Video', i:'🎬', t:'web', u:'https://www.youtube.com/embed' },
         { id:'cmd', n:'端末', i:'💻', t:'html', c:'<div class="full pad" style="background:#000;color:#0f0;font-family:monospace;">C:\\Users\\Admin>_</div>' },
         { id:'bin', n:'ごみ箱', i:'🗑️', t:'html', c:'<div class="pad">空です</div>' },
@@ -168,21 +171,25 @@ border:3px solid #34495e;"></div>
                 var othB = Array(64).fill(0); var turn = 1; 
                 var dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
              
+ 
    function initOthello(){
                     othB.fill(0); othB[27]=2; othB[28]=1; othB[35]=1; othB[36]=2; turn=1; drawOth();
                 }
                 function canFlip(idx, color, actualFlip=false){
                     if(othB[idx]!==0) return false;
              
+ 
        let foundTotal = false;
                     const r = Math.floor(idx/8), c = idx%8;
                     dirs.forEach(([dr, dc])=>{
                         let nr = r+dr, nc = c+dc, foundOpp = [];
           
+ 
                while(nr>=0 && nr<8 && nc>=0 && nc<8){
                             let nidx = nr*8+nc;
                             if(othB[nidx]===0) break;
-                    
+                   
+  
          if(othB[nidx]!==color) foundOpp.push(nidx);
 else {
                                 if(foundOpp.length>0){
@@ -204,6 +211,7 @@ d.innerHTML = '';
                         const s = document.createElement('div');
                         s.style = "background:#27ae60; display:flex; align-items:center; justify-content:center; cursor:pointer; border:0.1px solid #16a085;";
                         if(p) s.innerHTML = '<div style="width:32px; height:32px; border-radius:50%; background:'+(p==1?'#000':'#fff')+'; box-shadow:1px 1px 2px rgba(0,0,0,0.5)"></div>';
+ 
  
                        else if(turn===1 && canFlip(i, 1)) s.style.background = "#2ecc71";
                         s.onclick = ()=>moveOth(i); d.appendChild(s);
@@ -234,6 +242,7 @@ drawOth();
                 <div style="font-size:12px; color:white;">簡易将棋AI (先手:あなた)</div>
                 <div id="sho-board" style="display:grid; grid-template-columns:repeat(9, 36px); grid-template-rows:repeat(9, 36px); gap:1px; background:#5d4037; padding:2px; width:333px; margin:5px auto; border:3px solid #3e2723;"></div>
              
+ 
     <div id="sho-msg" style="color:white; font-size:12px;">駒を選択してください</div>
             </div>
             <script>
@@ -255,6 +264,7 @@ d.innerHTML = '';
                         s.style = "background:#f3d291; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; font-weight:bold; border:0.5px solid #6d4c41;";
                         if(i===sIdx) s.style.background = "#ffeb3b";
        
+ 
                  if(p.startsWith("v")){ s.style.transform="rotate(180deg)"; s.style.color="#d32f2f"; }
                         s.innerText = p.replace("v","");
                         s.onclick = ()=>clickSho(i); d.appendChild(s);
@@ -288,11 +298,13 @@ drawSho();
                 <h3 style="margin-top:0;">人生ゲーム AI Edition</h3>
                 <div id="j-board" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:4px; max-width:300px; margin:0 auto; background:#fff; padding:5px; border-radius:8px; border:2px solid #ccc;"></div>
              
+ 
     <div id="j-roulette" style="font-size:40px; margin:15px; font-weight:bold; color:#e67e22; height:50px;">?</div>
                 <div style="display:flex; justify-content:space-around; margin-bottom:10px;">
                     <div id="j-p1-stat" style="background:#e3f2fd; padding:5px 10px; border-radius:5px; border-left:4px solid #2196f3; font-size:11px;">
                         <b>あなた</b><br>資産: <span class="m">1000</span>万<br>職業: <span class="j">学生</span>
-               
+              
+  
      </div>
                     <div id="j-p2-stat" style="background:#fbe9e7;
 padding:5px 10px; border-radius:5px; border-left:4px solid #ff5722; font-size:11px;">
@@ -309,19 +321,22 @@ padding:10px; background:#27ae60; color:white; border:none; border-radius:5px; c
                     {m:1000, pos:0, job:"学生", name:"あなた", isAI:false},
                     {m:1000, pos:0, job:"学生", name:"CPU", isAI:true}
     
+ 
              ];
                 var jTurn = 0; 
                 var bSize = 20;
                 var events = [
                     "スタート","就職した！+200万","給料日！+100万","お宝発見！+300万","火遊びで火事！-500万","転職のチャンス(ITへ)","投資成功！+1000万","ランチ代-1万","宝くじ当選！+500万","給料日！+200万",
-          
+         
+  
            "落とし物-10万","臨時ボーナス+300万","無駄遣い-100万","給料日！+400万","仮想通貨暴落！-800万","昇進！+500万","ご祝儀-5万","ギャンブル勝利+200万","最後の給料+500万","ゴール！"
                 ];
 
                 function initJinsei() {
                     const b = document.getElementById('j-board');
                     if(!b) return; b.innerHTML = '';
-         
+       
+  
             for(let i=0; i<bSize; i++) {
                         let cell = document.createElement('div');
                         cell.id = 'cell-' + i;
@@ -332,22 +347,26 @@ border:1px solid #eee; font-size:9px; display:flex; align-items:center; justify-
                     }
                     updateBoard();
  
+ 
                 }
 
                 function updateBoard() {
                     for(let i=0; i<bSize; i++) {
                         const c = document.getElementById('cell-'+i);
-                
+               
+  
          if(c) c.innerHTML = i===0?"S": (i===bSize-1?"G":i);
                     }
                     players.forEach((p, idx) => {
                         let piece = document.createElement('div');
-                  
+                
+  
        piece.style = "width:14px; height:14px; border-radius:50%; position:absolute; z-index:5; border:1px solid #000; transition:0.3s;";
                         piece.style.background = idx===0?"#2196f3":"#ff5722";
                         piece.style.bottom = "2px";
                         piece.style.left = idx===0?"2px":"auto";
-      
+   
+    
                     piece.style.right = idx===0?"auto":"2px";
 const targetCell = document.getElementById('cell-'+p.pos);
                         if(targetCell) targetCell.appendChild(piece);
@@ -374,10 +393,12 @@ let count = 0;
                         count++;
                         if(count > 20) {
               
+ 
               clearInterval(inter);
                             let finalR = Math.floor(Math.random()*10)+1;
                             rElem.innerText = finalR;
                          
+ 
     movePlayer(pIdx, finalR);
                         }
                     }, 50);
@@ -448,16 +469,19 @@ e.value=""; document.getElementById('t-score').innerText="Score: "+sc; nextT(); 
                 <h3 style="margin-top:0; color:#2e7d32; font-size:18px;">🎒 小学生全学年・全教科ドリル</h3>
                 <div style="background:white; padding:8px; border-radius:8px; margin-bottom:10px; display:flex; gap:8px; justify-content:center; border:1px solid #c8e6c9;">
                
+ 
      <select id="st-grade" onchange="window.initStudy()" style="padding:4px; font-size:13px; font-weight:bold;">
                         <option value="1">小学1年生</option><option value="2">小学2年生</option><option value="3">小学3年生</option>
                         <option value="4">小学4年生</option><option value="5">小学5年生</option><option value="6">小学6年生</option>
                     </select>
                 
+ 
     <select id="st-subject" onchange="window.initStudy()" style="padding:4px; font-size:13px; font-weight:bold;">
                         <option value="sansu">算数 (無限ドリル)</option><option value="kokugo">国語</option>
                         <option value="rika">理科</option><option value="shakai">社会</option>
                         <option value="eigo">英語</option>
              
+ 
        </select>
                 </div>
                 <div style="background:white;
@@ -477,44 +501,53 @@ font-size:13px; color:#555; font-weight:500;">スコア: 0 問正解 / 0 問中<
                 var stData = {
                     kokugo: {
         
+ 
                 1: {q:"「いぬ」の最初の文字（ひらがな）はどれ？", a:["い","り","た"], c:"い"},
                         2: {q:"「新幹線」の正しい読み方はどれ？", a:["しんかんせん","しんがた","でんしゃ"], c:"しんかんせん"},
                         3: {q:"「反対（はんたい）」の反対の意味の言葉は？", a:["賛成（さんせい）","協力","相談"], c:"賛成（さんせい）"},
                         4: {q:"「あやまちを（あらた）める」の正しい漢字は？", a:["改める","新める","現める"], 
+ 
 c:"改める"},
                         5: {q:"「ことわざ」で、どんな名人でも失敗することがあるという意味のものは？", a:["猿も木から落ちる","犬も歩けば棒に当たる","猫に小判"], c:"猿も木から落ちる"},
                         6: {q:"四字熟語「臨機応変（りんきおうへん）」の正しい意味は？", a:["状況の変化に合わせて適切な行動をとること","ずっと同じやり方を守り続けること","急いでその場から逃げ出すこと"], c:"状況の変化に合わせて適切な行動をとること"}
                     },
                     rika: {
      
+ 
                    1: {q:"ヒマワリの花は、一般的に何色をしている？", a:["黄色","青色","赤色"], c:"黄色"},
                         2: {q:"ダンゴムシを指でやさしくさわるとどうなる？", a:["丸まる","ひっくり返る","羽が生えて飛ぶ"], c:"丸まる"},
                         3: {q:"昆虫（カブトムシやチョウなど）の足は全部で何本？", a:["6本","8本","4本"], c:"6本"},
                         
+ 
 4: {q:"太陽や月は、どちらの方角から昇って、どちらの方角へ沈む？", a:["東から昇って西へ沈む","西から昇って東へ沈む","北から昇って南へ沈む"], c:"東から昇って西へ沈む"},
                         5: {q:"メダカのオスとメスを見分けるとき、背びれに「切り込み」があるのはどっち？", a:["オス","メス","両方にある"], c:"オス"},
                         6: {q:"水溶液の性質を調べる実験で、酸性の液体につけると「赤色」に変わる紙はどれ？", a:["青色リトマス紙","赤色リトマス紙","普通の白い紙"], c:"青色リトマス紙"}
                     },
                     shakai: {
   
+ 
                         1: {q:"学校でお昼にみんなで一緒に食べるおいしいご飯の時間は？", a:["給食（きゅうしょく）","休み時間","お掃除の時間"], c:"給食（きゅうしょく）"},
                         2: {q:"町に交番があり、地域の安全を守ってくれるおまわりさんがいる場所は？", a:["警察署・交番","消防署","市役所"], c:"警察署・交番"},
                         3: {q:"地図記号で、漢字の「文」のマークが表している建物は？", a:["小・中学校（学校）","郵便局","お寺"], c:"小・中学校（学校）"},
-                     
+                   
+  
    4: {q:"日本にある47都道府県の中で、一番面積が広い（大きい）のはどこ？", a:["北海道","東京都","岩手県"], c:"北海道"},
                         5: {q:"日本の食料自給率（国内で作る割合）がほぼ100%で、主食となっている作物は？", a:["米","小麦","大豆"], c:"米"},
                         6: {q:"1889年に発布された、日本で最初の近代的な憲法の名前は？", a:["大日本帝国憲法","日本国憲法","十七条憲法"], c:"大日本帝国憲法"}
                     },
-                    
+                  
+  
 eigo: {
                         1: {q:"英語で「ありがとう」を伝えるときの正しい言葉は？", a:["Thank you","Hello","Good bye"], c:"Thank you"},
                         2: {q:"果物の「りんご」を意味する英語はどれ？", a:["apple","banana","orange"], c:"apple"},
                         3: {q:"数字の「10」を英語で書くとどれ？", a:["ten","eight","nine"], c:"ten"},
-               
+             
+  
          4: {q:"曜日の中で「水曜日」を表す英語はどれ？", a:["Wednesday","Monday","Friday"], c:"Wednesday"},
                         5: {q:"「私はサッカーが好きです」を意味する正しい英文はどれ？", a:["I like soccer.","I play baseball.","He likes soccer."], c:"I like soccer."},
                         6: {q:"「将来〜になりたい（望む）」を表現するときに使う重要な熟語は？", a:["want to be","have to go","can play"], c:"want to be"}
-                   
+                 
+  
     }
                 };
 window.initStudy = function(){
@@ -554,6 +587,7 @@ stA.forEach(function(ans){
                             var b = document.createElement('button');
                             b.style = "padding:10px 14px; font-size:14px; cursor:pointer; background:#fff; border:2px solid #4caf50; border-radius:6px; font-weight:bold; text-align:left; transition:0.1s;";
                             
+ 
 b.innerText = ans; b.onclick = function(){ window.checkStudy(ans); }; aA.appendChild(b);
                         });
 }
@@ -577,15 +611,19 @@ setTimeout(window.initStudy, 200);
                 <div style="position:relative; width:100%; flex:1; background:#000; overflow:hidden;">
                     <canvas id="drv-cv" width="400" height="220" style="width:100%; height:100%; object-fit:contain; display:block;"></canvas>
           
+ 
                     <div style="position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.6); padding:5px; border-radius:4px; font-size:11px; font-family:monospace; line-height:1.3;">
                         <div>GEAR: <span id="hud-gear" style="color:#ffeb3b;font-weight:bold;">P</span></div>
                         <div>ODO: <span id="hud-odo">0.00</span> km</div>
-                        <div>FUEL: <span id="hud-fuel">100</span> %</div>
+                 
+        <div>FUEL: <span id="hud-fuel">100</span> %</div>
                         <div>STATUS: <span id="hud-eng-status" style="color:#00e676;">NORMAL</span></div>
                         <div>MODE: <span id="hud-mode">AT</span> (<span id="hud-gnum">-</span>)</div>
                         <div>TEMP: <span id="hud-temp">80</span>℃</div>
-                        </div>
-                    <div style="position:absolute; top:10px;
+         
+                </div>
+                    <div style="position:absolute;
+top:10px;
 right:10px; background:rgba(0,0,0,0.6); padding:5px; border-radius:4px; font-size:11px; font-family:monospace;">
                         <span id="hud-env" style="color:#00e676;">晴れ</span>
                     </div>
@@ -627,10 +665,14 @@ font-size:10px; padding:6px 2px; background:#34495e; color:#fff; border:none; bo
                             <button onclick="drvToggleNight()" style="flex:1;
 font-size:10px; padding:6px 2px; background:#34495e; color:#fff; border:none; border-radius:4px; font-weight:bold;">🌙 夜/昼</button>
                         </div>
-                        <div style="display:flex; gap:2px; width:100%; margin-top:2px;">
-                            <button onclick="drvToggleATMT()" style="flex:1.2; font-size:10px; padding:4px 2px; background:#8e44ad; color:#fff; border:none; border-radius:4px; font-weight:bold;">AT/MT</button>
-                            <button onclick="drvShift(1)" style="flex:1; font-size:10px; padding:4px 2px; background:#2980b9; color:#fff; border:none; border-radius:4px; font-weight:bold;">UP+</button>
-                            <button onclick="drvShift(-1)" style="flex:1; font-size:10px; padding:4px 2px; background:#2980b9; color:#fff; border:none; border-radius:4px; font-weight:bold;">DN-</button>
+                        <div style="display:flex;
+gap:2px; width:100%; margin-top:2px;">
+                            <button onclick="drvToggleATMT()" style="flex:1.2;
+font-size:10px; padding:4px 2px; background:#8e44ad; color:#fff; border:none; border-radius:4px; font-weight:bold;">AT/MT</button>
+                            <button onclick="drvShift(1)" style="flex:1;
+font-size:10px; padding:4px 2px; background:#2980b9; color:#fff; border:none; border-radius:4px; font-weight:bold;">UP+</button>
+                            <button onclick="drvShift(-1)" style="flex:1;
+font-size:10px; padding:4px 2px; background:#2980b9; color:#fff; border:none; border-radius:4px; font-weight:bold;">DN-</button>
                         </div>
                         </div>
                     <div style="display:flex;
@@ -647,32 +689,38 @@ touch-action:none;" onpointerdown="drvAccel(true)" onpointerup="drvAccel(false)"
             <script>
                 (function(){
                     var 
+ 
 cv = document.getElementById('drv-cv'); if(!cv) return; var ctx = cv.getContext('2d');
                     var speed = 0, rpm = 800, gear = 'P', odo = 0, fuel = 100;
                     var isAccel = false, isBrake = false, steerDir = 0, currentSteer = 0;
                     var pos = 0, playerX 
+ 
 = 0, envRain = false, envNight = false, wiperAngle = 0, wiperDir = 1, frame = 0;
                     var engineOn = false; var idlingStop = false;
                     /* ▼今回追加▼ */
                     var isAT = true, gNum = 1, engTemp = 80, isBlown = false;
-                    var gearRatios = [0, 35, 65, 100, 140, 180, 220]; 
+   
+                 var gearRatios = [0, 35, 65, 100, 140, 180, 220]; 
                     window.drvToggleATMT = function() { isAT = !isAT; };
                     window.drvShift = function(dir) {
-                        if(!isAT && gear === 'D') {
+                       
+ if(!isAT && gear === 'D') {
                             gNum += dir;
-                            if(gNum < 1) gNum = 1;
+if(gNum < 1) gNum = 1;
                             if(gNum > 6) gNum = 6;
                             rpm = Math.max(800, rpm - dir * 1200);
-                        }
+}
                     };
-                    /* ▲今回追加▲ */
+/* ▲今回追加▲ */
 
                     window.drvToggleEngine = function() {
-                        if (isBlown) return; // 追加: ブロー時は始動不可
+                        if (isBlown) return;
+// 追加: ブロー時は始動不可
                         if (Math.abs(speed) > 2) return;
-      
-                        if (!engineOn && (gear !== 'P' && gear !== 'N')) { alert("PかNレンジで始動してください"); return; }
-                        engineOn = !engineOn; idlingStop = false;
+if (!engineOn && (gear !== 'P' && gear !== 'N')) { alert("PかNレンジで始動してください"); return;
+}
+                        engineOn = !engineOn;
+idlingStop = false;
 var btn = document.getElementById('btn-engine');
                         if(btn) { btn.style.background = engineOn ? "#2ecc71" : "#e74c3c"; btn.innerText = engineOn ?
 "ENGINE ON" : "ENGINE START"; }
@@ -687,6 +735,7 @@ gear = g;
                             var btn = document.getElementById('g-'+k);
                             if(btn) {
                                 btn.style.background = (k===g) 
+ 
 ? (k==='P'?'#ff5722':k==='R'?'#e74c3c':k==='D'?'#2ecc71':'#f1c40f') : '#333';
                                 btn.style.color = (k===g) ? '#fff' : '#ccc';
                             }
@@ -722,17 +771,19 @@ idlingStop = false; }
                         
                         /* ===================== ▼ここから追加▼ ===================== */
                         var btnEngine = document.getElementById('btn-engine');
-                        if (btnEngine) {
+if (btnEngine) {
                             if (isBlown) {
                                 btnEngine.style.background = "#000";
-                                btnEngine.innerText = "ENGINE DEAD";
+btnEngine.innerText = "ENGINE DEAD";
                             } else if (idlingStop) {
-                                btnEngine.style.background = "#f39c12"; // アイドリングストップ時の色(オレンジ)
+                                btnEngine.style.background = "#f39c12";
+// アイドリングストップ時の色(オレンジ)
                                 btnEngine.innerText = "IDLING STOP";
-                            } else {
-                                btnEngine.style.background = engineOn ? "#2ecc71" : "#e74c3c";
+} else {
+                                btnEngine.style.background = engineOn ?
+"#2ecc71" : "#e74c3c";
                                 btnEngine.innerText = engineOn ? "ENGINE ON" : "ENGINE START";
-                            }
+}
                         }
                         /* ===================== ▲ここまで追加▲ ===================== */
 
@@ -778,6 +829,7 @@ rpm = engineOn ? Math.max(800, rpm - 40) : Math.max(0, rpm - 100);
                             // PまたはNギア（空ぶかし状態）
                             if(currentAccel && fuel > 0) {
            
+ 
                              rpm += 160;
 // 【エンジン限界】6600回転でパパパンと針が跳ね返るレブリミッターを完全再現
                                 if(rpm > 6600) rpm = 6300;
@@ -799,85 +851,88 @@ if(speed < 0) speed = Math.min(0, speed + 1.2);
 
                         // アイドリング回転数（下限800）を絶対維持
                         if(engineOn && rpm < 800) rpm = 800;
-                        
-                        /* ===================== ▼今回追加ロジック▼ ===================== */
+/* ===================== ▼今回追加ロジック▼ ===================== */
                         var hs = document.getElementById('hud-eng-status');
-                        var ht = document.getElementById('hud-temp');
+var ht = document.getElementById('hud-temp');
                         var hm = document.getElementById('hud-mode');
                         var hgn = document.getElementById('hud-gnum');
-
-                        if (engineOn && !isBlown) {
+if (engineOn && !isBlown) {
                             // レッドゾーンで温度上昇、それ以外は冷却
                             if (rpm > 6000) engTemp += 0.08;
-                            else engTemp -= 0.03;
+else engTemp -= 0.03;
                             if (engTemp < 80) engTemp = 80;
-                            
-                            // 限界温度突破でエンジンブロー
+// 限界温度突破でエンジンブロー
                             if (engTemp > 120) {
                                 isBlown = true;
-                                engineOn = false;
-                                if(hs) { hs.innerText = "FIRE!!"; hs.style.color = "red"; }
+engineOn = false;
+                                if(hs) { hs.innerText = "FIRE!!"; hs.style.color = "red";
+}
                                 alert("エンジンが焼き付きました！(ブロー)");
-                            }
+}
                         } else if (isBlown) {
                             engineOn = false;
-                            rpm = Math.max(0, rpm - 200);
-                            if(hs) { hs.innerText = "BROKEN"; hs.style.color = "red"; }
-                            engTemp -= 0.01; 
-                        } else {
+rpm = Math.max(0, rpm - 200);
+                            if(hs) { hs.innerText = "BROKEN"; hs.style.color = "red";
+}
+                            engTemp -= 0.01;
+} else {
                             engTemp -= 0.02;
-                            if(engTemp < 40) engTemp = 40;
-                            if(hs) { hs.innerText = "NORMAL"; hs.style.color = "#00e676"; }
+if(engTemp < 40) engTemp = 40;
+                            if(hs) { hs.innerText = "NORMAL"; hs.style.color = "#00e676";
+}
                         }
 
                         if(ht) ht.innerText = Math.floor(engTemp);
-                        if(hm) hm.innerText = isAT ? "AT" : "MT";
+if(hm) hm.innerText = isAT ? "AT" : "MT";
 
                         // ギアと速度の計算上書き（既存ロジックをAT/MT対応に補正）
                         if (gear === 'D' && engineOn && !isBlown) {
                             if (isAT) {
-                                // AT自動変速
+                             
+   // AT自動変速
                                 if (speed < 30) gNum = 1;
-                                else if (speed < 60) gNum = 2;
+else if (speed < 60) gNum = 2;
                                 else if (speed < 90) gNum = 3;
-                                else if (speed < 120) gNum = 4;
+else if (speed < 120) gNum = 4;
                                 else if (speed < 150) gNum = 5;
                                 else gNum = 6;
-                                
-                                var targetRpm = 1000 + ((speed % 30) / 30) * 4500; 
+var targetRpm = 1000 + ((speed % 30) / 30) * 4500; 
                                 if(isAccel) targetRpm += 1500;
-                                rpm += (targetRpm - Math.max(800,rpm)) * 0.1;
+rpm += (targetRpm - Math.max(800,rpm)) * 0.1;
                                 
                             } else {
                                 // MT手動変速
                                 var maxSpd = gearRatios[gNum];
-                                
-                                if (speed > maxSpd - 5 && isAccel) {
+if (speed > maxSpd - 5 && isAccel) {
                                     rpm += 150;
-                                    if (rpm > 7500) rpm = 7200; // レブリミット
+if (rpm > 7500) rpm = 7200; // レブリミット
                                 } else {
                                     var baseRpm = 800 + (speed / maxSpd) * 5500;
-                                    if(isAccel) baseRpm += 1000;
+if(isAccel) baseRpm += 1000;
                                     rpm += (baseRpm - rpm) * 0.15;
-                                }
+}
                                 
                                 // ギアと速度のミスマッチ時の加速ペナルティ
                                 if (isAccel) {
-                                    if (speed > maxSpd) {
-                                        speed -= 0.55; // 既存の加速を打ち消す
+ 
+                                   if (speed > maxSpd) {
+                                        speed -= 0.55;
+// 既存の加速を打ち消す
                                     } else if (gNum > 1 && speed < gearRatios[gNum-1] - 15) {
-                                        speed -= 0.45; // エンスト気味
+                                        speed -= 0.45;
+// エンスト気味
                                         rpm -= 150;
-                                    }
+}
                                 }
                             }
                         }
-                        if (hgn && gear === 'D') hgn.innerText = gNum;
-                        else if (hgn) hgn.innerText = "-";
+                
+        if (hgn && gear === 'D') hgn.innerText = gNum;
+else if (hgn) hgn.innerText = "-";
                         /* ===================== ▲今回追加ロジック▲ ===================== */
 
                         currentSteer += (steerDir * 0.06 - currentSteer) * 0.25;
-                        playerX += currentSteer * (speed * 0.06);
+playerX += currentSteer * (speed * 0.06);
 var isOffRoad = Math.abs(playerX) > 60; var shakeX = 0, shakeY = 0;
 if(isOffRoad && Math.abs(speed) > 5) { speed *= 0.94; shakeX = (Math.random()-0.5)*3; shakeY = (Math.random()-0.5)*3;
 }
@@ -972,10 +1027,11 @@ ctx.translate(200, 178); ctx.rotate(wiperAngle);
                         /* ▼今回追加箇所（エンジンブローエフェクト）▼ */
                         if (isBlown) {
                             ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                            ctx.beginPath(); ctx.arc(200 + Math.random()*20, 120 + Math.random()*20, 30 + Math.random()*40, 0, Math.PI*2); ctx.fill();
+ctx.beginPath(); ctx.arc(200 + Math.random()*20, 120 + Math.random()*20, 30 + Math.random()*40, 0, Math.PI*2); ctx.fill();
                             ctx.fillStyle = 'rgba(255,60,0,0.7)';
-                            ctx.beginPath(); ctx.arc(200 + Math.random()*10, 140 + Math.random()*10, 20 + Math.random()*30, 0, Math.PI*2); ctx.fill();
-                        }
+                            ctx.beginPath();
+ctx.arc(200 + Math.random()*10, 140 + Math.random()*10, 20 + Math.random()*30, 0, Math.PI*2); ctx.fill();
+}
                         /* ▲今回追加箇所▲ */
 
                         ctx.restore();
@@ -984,12 +1040,134 @@ requestAnimationFrame(loop);
                     setTimeout(() => { window.drvSetGear('P'); loop(); }, 200);
 })();
             <\/script>`
-        }
+        },
+        /* ▼ ここから追加: ミュージックアプリ ▼ */
+        { id:'music', n:'ミュージック', i:'🎵', t:'html', c:`
+            <div class="pad" style="height:100%; display:flex; flex-direction:column; background:#1e1e1e; color:white; box-sizing:border-box;">
+                <h3 style="margin-top:0;">🎵 ミュージック</h3>
+                <label class="upload-label" style="display:inline-block; margin-bottom:10px; background:#1db954; text-align:center;">
+                    ＋ 音楽を追加 (MP3等)
+                    <input type="file" style="display:none" accept="audio/*" onchange="window.addMusic(event)">
+                </label>
+                <div id="music-list" style="flex:1; overflow-y:auto; background:#2c2c2c; padding:10px; border-radius:8px;"></div>
+                <audio id="music-player" controls style="width:100%; margin-top:10px; outline:none;"></audio>
+            </div>
+            <script>
+                window.musicFiles = JSON.parse(localStorage.getItem('webos_music') || '[]');
+                window.renderMusic = function() {
+                    const list = document.getElementById('music-list');
+                    if(!list) return;
+                    list.innerHTML = window.musicFiles.length === 0 ? '<div style="color:#888;">音楽がありません</div>' : '';
+                    window.musicFiles.forEach((m, i) => {
+                        const item = document.createElement('div');
+                        item.style = "padding:8px; border-bottom:1px solid #444; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:13px;";
+                        item.innerHTML = '<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:70%;">' + m.name + '</span><button onclick="window.delMusic('+i+'); event.stopPropagation();" style="background:#e74c3c; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer; font-size:11px;">削除</button>';
+                        item.onclick = () => {
+                            const p = document.getElementById('music-player');
+                            p.src = m.data;
+                            p.play();
+                        };
+                        list.appendChild(item);
+                    });
+                };
+                window.addMusic = function(e) {
+                    const f = e.target.files[0]; if(!f) return;
+                    const r = new FileReader();
+                    r.onload = (ev) => {
+                        try {
+                            window.musicFiles.push({name: f.name, data: ev.target.result});
+                            localStorage.setItem('webos_music', JSON.stringify(window.musicFiles));
+                            window.renderMusic();
+                        } catch(err) {
+                            alert("保存容量の限界です！他のデータを削除してください。\\n(※ブラウザのlocalStorage容量制限)");
+                        }
+                    };
+                    r.readAsDataURL(f);
+                    e.target.value = '';
+                };
+                window.delMusic = function(i) {
+                    window.musicFiles.splice(i, 1);
+                    localStorage.setItem('webos_music', JSON.stringify(window.musicFiles));
+                    window.renderMusic();
+                };
+                setTimeout(window.renderMusic, 100);
+            <\/script>
+        `},
+        /* ▼ ここから追加: フォトアプリ ▼ */
+        { id:'photo', n:'フォト', i:'🖼️', t:'html', c:`
+            <div class="pad" style="height:100%; display:flex; flex-direction:column; background:#f0f0f0; box-sizing:border-box;">
+                <h3 style="margin-top:0; color:#333;">🖼️ フォトギャラリー</h3>
+                <label class="upload-label" style="display:inline-block; margin-bottom:10px; background:#e1306c; text-align:center;">
+                    ＋ 写真を追加
+                    <input type="file" style="display:none" accept="image/*" onchange="window.addPhoto(event)">
+                </label>
+                <div id="photo-list" style="flex:1; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); gap:10px; align-content:start;"></div>
+            </div>
+            <script>
+                window.photoFiles = JSON.parse(localStorage.getItem('webos_photos') || '[]');
+                window.renderPhotos = function() {
+                    const list = document.getElementById('photo-list');
+                    if(!list) return;
+                    list.innerHTML = window.photoFiles.length === 0 ? '<div style="color:#888; grid-column:1/-1;">写真がありません</div>' : '';
+                    window.photoFiles.forEach((p, i) => {
+                        const item = document.createElement('div');
+                        item.style = "position:relative; width:100%; padding-bottom:100%; background:url('"+p.data+"') center/cover; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.2); cursor:pointer;";
+                        item.onclick = () => window.viewPhotoFull(p.data);
+                        
+                        const delBtn = document.createElement('button');
+                        delBtn.innerText = '×';
+                        delBtn.style = "position:absolute; top:4px; right:4px; background:rgba(255,0,0,0.8); color:white; border:none; border-radius:50%; width:22px; height:22px; font-size:12px; cursor:pointer; line-height:1;";
+                        delBtn.onclick = (e) => { e.stopPropagation(); window.delPhoto(i); };
+                        
+                        item.appendChild(delBtn);
+                        list.appendChild(item);
+                    });
+                };
+                window.addPhoto = function(e) {
+                    const f = e.target.files[0]; if(!f) return;
+                    const r = new FileReader();
+                    r.onload = (ev) => {
+                        try {
+                            window.photoFiles.push({name: f.name, data: ev.target.result});
+                            localStorage.setItem('webos_photos', JSON.stringify(window.photoFiles));
+                            window.renderPhotos();
+                        } catch(err) {
+                            alert("保存容量の限界です！他のデータを削除してください。\\n(※ブラウザのlocalStorage容量制限)");
+                        }
+                    };
+                    r.readAsDataURL(f);
+                    e.target.value = '';
+                };
+                window.delPhoto = function(i) {
+                    window.photoFiles.splice(i, 1);
+                    localStorage.setItem('webos_photos', JSON.stringify(window.photoFiles));
+                    window.renderPhotos();
+                };
+                window.viewPhotoFull = function(src) {
+                    const v = document.createElement('div');
+                    v.style = "position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999999; display:flex; align-items:center; justify-content:center; flex-direction:column;";
+                    v.innerHTML = '<img src="'+src+'" style="max-width:90%; max-height:80%; border-radius:8px; box-shadow:0 0 20px rgba(0,0,0,0.5); object-fit:contain;"><button style="margin-top:20px; padding:10px 20px; font-size:16px; cursor:pointer; border:none; border-radius:5px; background:#fff; color:#000;" onclick="this.parentElement.remove()">閉じる</button>';
+                    document.body.appendChild(v);
+                };
+                setTimeout(window.renderPhotos, 100);
+            <\/script>
+        `}
     ];
 
     let zIndex = 1000;
 let installedIds = JSON.parse(localStorage.getItem('my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver'];
 let uploadedFiles = [];
+
+// ▼新規アプリを自動インストール状態にするための追加コード▼
+if (!installedIds.includes('music') && !localStorage.getItem('webos_music_added')) {
+    installedIds.push('music');
+    localStorage.setItem('webos_music_added', '1');
+}
+if (!installedIds.includes('photo') && !localStorage.getItem('webos_photo_added')) {
+    installedIds.push('photo');
+    localStorage.setItem('webos_photo_added', '1');
+}
+// ▲ここまで追加▲
 
     window.onload = () => {
         const savedWall = localStorage.getItem('my_wall');
@@ -1010,6 +1188,7 @@ s.innerHTML = '';
                 d.appendChild(ic);
                 const si = createIcon(a);
        
+ 
                  si.style.color = '#333'; si.style.textShadow = 'none';
                 si.onclick = () => { openWin(a.id); tglStart(); };
                 s.appendChild(si);
@@ -1045,6 +1224,7 @@ win.innerHTML = `
                     <span onclick="document.getElementById('win-${id}').style.display='none'">－</span>
                     <span class="x" onclick="document.getElementById('win-${id}').remove()">×</span>
       
+ 
                 </div>
             </div>
             <div class="win-b"></div>
@@ -1069,11 +1249,13 @@ document.body.appendChild(win);
                     <h3>設定</h3>
                     <div class="wall-upload" onclick="document.getElementById('wall-input').click()">📁 壁紙変更<input type="file" id="wall-input" style="display:none" accept="image/*" onchange="uploadWall(event)"></div>
                
+ 
      
                     <div style="margin-top:20px; padding:15px; background:#f5f5f5; border:1px solid #ddd; border-radius:8px;">
                         <h4 style="margin:0 0 10px 0;">🔐 パスワード変更</h4>
                         <input type="password" id="change-old-pwd" placeholder="現在のパスワード" style="width:100%; padding:6px; margin-bottom:8px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
     
+ 
                     <input type="password" id="change-new-pwd" placeholder="新しいパスワード" style="width:100%; padding:6px; margin-bottom:8px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
                         <button onclick="changeOSPassword()" style="width:100%;
 padding:8px; background:#0078d4; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:500;">変更を適用</button>
@@ -1089,6 +1271,7 @@ cursor:pointer;">⚠️ システムの初期化 (パスワードもリセット
         } else if (a.t === 'html') {
             body.innerHTML = a.c;
             const scs = 
+ 
 body.getElementsByTagName('script');
             for(let s of scs) eval(s.innerHTML);
         } else {
@@ -1100,6 +1283,7 @@ body.getElementsByTagName('script');
         b.innerHTML = `
             <div class="upload-area">
                 <label 
+ 
 class="upload-label">
                     ＋ ファイルをアップロード
                     <input type="file" style="display:none" onchange="handleFileUpload(event, this)">
@@ -1115,6 +1299,7 @@ height:calc(100% - 45px);">
                 <div class="exp-row">📄 system_log.txt</div>
                 <div id="custom-files"></div>
          
+ 
    </div>
         `;
         updateFileList();
@@ -1126,6 +1311,7 @@ height:calc(100% - 45px);">
         reader.onload = (ev) => {
             uploadedFiles.push({ name: file.name, type: file.type, data: ev.target.result, icon: file.type.startsWith('image/') ? '🖼️' : '📄' });
      
+ 
        updateFileList(); input.value = ''; 
         };
         reader.readAsDataURL(file);
@@ -1241,12 +1427,14 @@ document.getElementById('change-new-pwd').value = '';
             #login-screen {
                 position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(25px);
               
+ 
   z-index: 99995; display: flex; flex-direction: column; align-items: center; justify-content: center;
                 color: white; font-family: 'Segoe UI', Tahoma, sans-serif; opacity: 1; transition: opacity 0.5s ease;
             }
             .login-box {
                 background: rgba(255, 255, 255, 0.1); padding: 35px; border-radius: 12px;
             
+ 
     border: 1px solid rgba(255, 255, 255, 0.2); text-align: center; width: 320px;
                 box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             }
@@ -1283,12 +1471,14 @@ loginUI.innerHTML = `
                 <input type="password" id="reg-pwd" placeholder="新しいパスワード" autocomplete="new-password">
                 <button id="reg-btn">設定を保存してログイン</button>
       
+ 
           <div class="login-error" id="reg-error"></div>
             </div>
             <div class="login-box" id="login-auth" style="display: none;">
                 <div style="font-size: 56px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));">👤</div>
                 <h2>Administrator</h2>
                 <input type="password" id="login-pwd" 
+ 
 placeholder="パスワードを入力" autocomplete="current-password">
                 <button id="login-btn">ログイン</button>
                 <div class="login-error" id="login-error"></div>
