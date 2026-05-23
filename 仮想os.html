@@ -1040,11 +1040,137 @@ requestAnimationFrame(loop);
                     setTimeout(() => { window.drvSetGear('P'); loop(); }, 200);
 })();
             <\/script>`
+        },
+        { id:'babanuki', n:'ババ抜き', i:'🃏', t:'html', c:`
+            <div style="text-align:center; background:linear-gradient(135deg,#1a472a,#0d2b0d); color:white; height:100%; display:flex; flex-direction:column; padding:10px; box-sizing:border-box; font-family:sans-serif; overflow-y:auto;">
+                <h3 style="margin:0 0 6px 0; font-size:16px;">🃏 ババ抜き AI対戦</h3>
+                <div id="bb-msg" style="background:rgba(255,255,255,0.15); padding:6px 10px; border-radius:8px; margin-bottom:8px; font-size:12px; font-weight:bold; min-height:20px;">新しいゲームを始めてください</div>
+                <div style="font-size:11px; margin-bottom:4px; color:#ffcccc;">🤖 AIの手札 (<span id="bb-ai-count">0</span>枚) ← クリックで引く</div>
+                <div id="bb-ai-hand" style="display:flex; flex-wrap:wrap; justify-content:center; gap:3px; min-height:65px; background:rgba(0,0,0,0.35); border-radius:8px; padding:5px; margin-bottom:8px; align-content:center;"></div>
+                <div style="font-size:11px; margin-bottom:4px; color:#ccffcc;">😊 あなたの手札 (<span id="bb-my-count">0</span>枚)</div>
+                <div id="bb-my-hand" style="display:flex; flex-wrap:wrap; justify-content:center; gap:3px; min-height:65px; background:rgba(0,0,0,0.35); border-radius:8px; padding:5px; margin-bottom:10px; align-content:center; flex:1;"></div>
+                <button onclick="initBabanuki()" style="padding:8px 20px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.4);">🔄 新しいゲーム</button>
+            </div>
+            <script>
+                var bbMyHand=[], bbAiHand=[], bbTurn='player', bbGameOn=false, bbWaiting=false;
+
+                function bbShuffle(a){ for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;} return a; }
+
+                function initBabanuki(){
+                    var suits=['♠','♥','♦','♣'], ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+                    var deck=[];
+                    suits.forEach(function(s){ ranks.forEach(function(r){ deck.push({s:s,r:r}); }); });
+                    deck.push({s:'🃏',r:'BABA'});
+                    bbShuffle(deck);
+                    bbMyHand=[]; bbAiHand=[];
+                    deck.forEach(function(c,i){ if(i%2===0) bbMyHand.push(c); else bbAiHand.push(c); });
+                    bbMyHand=bbRemovePairs(bbMyHand);
+                    bbAiHand=bbRemovePairs(bbAiHand);
+                    bbTurn='player'; bbGameOn=true; bbWaiting=false;
+                    bbSetMsg('🎴 AIの手札（裏向き）からカードをクリックして引いてください！');
+                    bbRender();
+                }
+
+                function bbRemovePairs(hand){
+                    var changed=true;
+                    while(changed){
+                        changed=false;
+                        for(var i=0;i<hand.length;i++){
+                            if(hand[i].r==='BABA') continue;
+                            for(var j=i+1;j<hand.length;j++){
+                                if(hand[i].r===hand[j].r){ hand.splice(j,1); hand.splice(i,1); changed=true; break; }
+                            }
+                            if(changed) break;
+                        }
+                    }
+                    return hand;
+                }
+
+                function bbRender(){
+                    var aiDiv=document.getElementById('bb-ai-hand');
+                    var myDiv=document.getElementById('bb-my-hand');
+                    var aiCnt=document.getElementById('bb-ai-count');
+                    var myCnt=document.getElementById('bb-my-count');
+                    if(!aiDiv) return;
+                    aiCnt.innerText=bbAiHand.length;
+                    myCnt.innerText=bbMyHand.length;
+                    aiDiv.innerHTML='';
+                    bbAiHand.forEach(function(c,i){
+                        var card=document.createElement('div');
+                        card.style.cssText='width:32px;height:50px;background:linear-gradient(135deg,#1565c0,#0d47a1);border-radius:5px;border:2px solid #90caf9;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:2px 2px 6px rgba(0,0,0,0.5);transition:transform 0.15s;';
+                        card.innerText='🂠';
+                        card.title='クリックで引く';
+                        (function(idx){
+                            card.onmouseover=function(){ if(bbGameOn&&bbTurn==='player'&&!bbWaiting) card.style.transform='translateY(-8px) scale(1.08)'; };
+                            card.onmouseout=function(){ card.style.transform='none'; };
+                            card.onclick=function(){ bbPlayerDraw(idx); };
+                        })(i);
+                        aiDiv.appendChild(card);
+                    });
+                    myDiv.innerHTML='';
+                    bbMyHand.forEach(function(c){
+                        var card=document.createElement('div');
+                        var isRed=c.s==='♥'||c.s==='♦'||c.s==='🃏';
+                        var isBaba=c.r==='BABA';
+                        card.style.cssText='width:32px;height:50px;background:'+(isBaba?'linear-gradient(135deg,#c62828,#e53935)':'#fff')+';border-radius:5px;border:2px solid '+(isBaba?'#ff8a80':'#ddd')+';display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:'+(isRed?'#c62828':'#1a1a1a')+';box-shadow:2px 2px 6px rgba(0,0,0,0.4);';
+                        if(isBaba){ card.innerHTML='<span style="font-size:16px;">🃏</span><span style="color:#fff;font-weight:bold;font-size:9px;">BABA</span>'; }
+                        else { card.innerHTML='<b style="font-size:12px;">'+c.r+'</b><span style="font-size:14px;">'+c.s+'</span>'; }
+                        myDiv.appendChild(card);
+                    });
+                }
+
+                function bbSetMsg(m){ var el=document.getElementById('bb-msg'); if(el) el.innerText=m; }
+
+                function bbPlayerDraw(idx){
+                    if(!bbGameOn||bbTurn!=='player'||bbWaiting) return;
+                    var drawn=bbAiHand.splice(idx,1)[0];
+                    bbMyHand.push(drawn);
+                    bbMyHand=bbRemovePairs(bbMyHand);
+                    bbRender();
+                    if(bbCheckWin()) return;
+                    bbSetMsg('🤖 AIがあなたの手札から引いています...');
+                    bbTurn='ai'; bbWaiting=true;
+                    setTimeout(bbAiDraw, 1000);
+                }
+
+                function bbAiDraw(){
+                    if(bbMyHand.length===0){ bbCheckWin(); return; }
+                    var idx=Math.floor(Math.random()*bbMyHand.length);
+                    var babaIdx=bbMyHand.findIndex(function(c){ return c.r==='BABA'; });
+                    if(babaIdx>=0&&Math.random()<0.25) idx=babaIdx;
+                    var drawn=bbMyHand.splice(idx,1)[0];
+                    bbAiHand.push(drawn);
+                    bbAiHand=bbRemovePairs(bbAiHand);
+                    bbRender();
+                    if(bbCheckWin()) return;
+                    bbSetMsg('🎴 AIが引きました！あなたの番 → AIの手札からカードを引いてください');
+                    bbTurn='player'; bbWaiting=false;
+                    bbRender();
+                }
+
+                function bbCheckWin(){
+                    if(bbMyHand.length===0&&bbAiHand.length>0){
+                        bbSetMsg('🎉 あなたの勝ち！ AIがババを持っています！おめでとう！');
+                        bbGameOn=false; bbRender(); return true;
+                    }
+                    if(bbAiHand.length===0&&bbMyHand.length>0){
+                        bbSetMsg('😢 あなたの負け... ババを持っているのはあなたです！');
+                        bbGameOn=false; bbRender(); return true;
+                    }
+                    if(bbMyHand.length===0&&bbAiHand.length===0){
+                        bbSetMsg('🤝 引き分け！');
+                        bbGameOn=false; return true;
+                    }
+                    return false;
+                }
+
+                setTimeout(initBabanuki, 200);
+            <\/script>`
         }
     ];
 
     let zIndex = 1000;
-let installedIds = JSON.parse(localStorage.getItem('my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver'];
+let installedIds = JSON.parse(localStorage.getItem('my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver', 'babanuki'];
 let uploadedFiles = [];
 
     window.onload = () => {
@@ -1516,7 +1642,7 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
                 const prefix = name === 'Administrator' ? '' : name + '_';
                 
                 // アプリや壁紙のロード状態をユーザーごとに上書き
-                installedIds = JSON.parse(localStorage.getItem(prefix + 'my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver'];
+                installedIds = JSON.parse(localStorage.getItem(prefix + 'my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver', 'babanuki'];
                 const savedWall = localStorage.getItem(prefix + 'my_wall');
                 if (savedWall) {
                     document.getElementById('wall').style.backgroundImage = `url(${savedWall})`;
