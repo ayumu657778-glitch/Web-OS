@@ -1166,11 +1166,593 @@ requestAnimationFrame(loop);
 
                 setTimeout(initBabanuki, 200);
             <\/script>`
+        },
+        { id:'train', n:'電車シミュレータ', i:'🚃', t:'html', c:`
+<div style="background:#12121f; color:#e0e0e0; height:100%; display:flex; flex-direction:column; font-family:'Segoe UI',sans-serif; user-select:none; overflow:hidden; touch-action:none;">
+  <div style="position:relative; flex:1; background:#000; overflow:hidden; min-height:0;">
+    <canvas id="trn-cv" width="600" height="280" style="width:100%; height:100%; display:block; object-fit:contain;"></canvas>
+    <div style="position:absolute; top:6px; left:6px; background:rgba(0,0,0,0.8); padding:5px 9px; border-radius:6px; font-family:monospace; font-size:11px; line-height:1.7; border:1px solid #2a3a4a;">
+      <div>次 停 車: <span id="trn-next" style="color:#00e5ff; font-weight:bold;">---</span></div>
+      <div>残 距 離: <span id="trn-dist" style="color:#76ff03; font-weight:bold;">---</span> m</div>
+      <div>制限速度: <span id="trn-limit" style="color:#ff6d00; font-weight:bold;">---</span> km/h</div>
+      <div>信  号: <span id="trn-sig">🟢</span></div>
+    </div>
+    <div style="position:absolute; top:6px; right:6px; background:rgba(0,0,0,0.8); padding:5px 9px; border-radius:6px; font-family:monospace; font-size:11px; line-height:1.7; border:1px solid #2a3a4a;">
+      <div>走行距離: <span id="trn-odo" style="color:#ffd740;">0</span> m</div>
+      <div>乗客満足: <span id="trn-score" style="color:#e040fb;">100</span>%</div>
+      <div>天  候: <span id="trn-weather" style="color:#80deea;">晴れ☀️</span></div>
+    </div>
+    <div style="position:absolute; bottom:6px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.88); border:1px solid #333; border-radius:8px; padding:4px 10px; text-align:center;">
+      <canvas id="trn-spd-cv" width="80" height="72" style="display:block; margin:0 auto;"></canvas>
+      <div id="trn-spd-num" style="font-size:24px; font-weight:bold; color:#00e5ff; font-family:monospace; margin-top:-4px; text-align:center; letter-spacing:1px;">0</div>
+      <div style="font-size:9px; color:#777; text-align:center; margin-top:-2px;">km/h</div>
+    </div>
+    <div style="position:absolute; bottom:6px; left:6px; background:rgba(0,0,0,0.8); border:1px solid #2a3a4a; border-radius:6px; padding:5px 8px; font-family:monospace; font-size:11px; line-height:1.7;">
+      <div>力 行: <span id="trn-pn" style="color:#00e676; font-weight:bold;">切</span></div>
+      <div>制 動: <span id="trn-bn" style="color:#ff6d00; font-weight:bold;">切</span></div>
+    </div>
+    <div id="trn-popup" style="position:absolute; top:42%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.92); border:2px solid #ffd740; border-radius:10px; padding:12px 20px; text-align:center; font-size:13px; font-weight:bold; display:none; z-index:20; color:#fff; white-space:pre-line; pointer-events:none;"></div>
+  </div>
+  <div style="background:#0a0a18; border-top:2px solid #1e2a3a; padding:5px 6px; display:grid; grid-template-columns:1fr auto 1fr; gap:6px; align-items:center; flex-shrink:0; height:118px; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:2px;">
+      <div style="font-size:9px; color:#80cbc4; text-align:center; font-weight:bold; letter-spacing:1px;">⚡ 力行ノッチ</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
+        <button id="trn-p5" ontouchstart="trnSetP(5)" onclick="trnSetP(5)" style="height:26px;background:#1b5e20;color:#a5d6a7;border:1px solid #388e3c;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">P5</button>
+        <button id="trn-p4" ontouchstart="trnSetP(4)" onclick="trnSetP(4)" style="height:26px;background:#1b5e20;color:#a5d6a7;border:1px solid #388e3c;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">P4</button>
+        <button id="trn-p3" ontouchstart="trnSetP(3)" onclick="trnSetP(3)" style="height:26px;background:#1b5e20;color:#a5d6a7;border:1px solid #388e3c;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">P3</button>
+        <button id="trn-p2" ontouchstart="trnSetP(2)" onclick="trnSetP(2)" style="height:26px;background:#1b5e20;color:#a5d6a7;border:1px solid #388e3c;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">P2</button>
+        <button id="trn-p1" ontouchstart="trnSetP(1)" onclick="trnSetP(1)" style="height:26px;background:#1b5e20;color:#a5d6a7;border:1px solid #388e3c;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">P1</button>
+        <button id="trn-p0" ontouchstart="trnSetP(0)" onclick="trnSetP(0)" style="height:26px;background:#263238;color:#90a4ae;border:1px solid #455a64;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">切</button>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+      <button ontouchstart="trnHorn()" onclick="trnHorn()" style="width:56px;height:26px;background:#37474f;color:#eceff1;border:1px solid #607d8b;border-radius:4px;font-size:10px;font-weight:bold;cursor:pointer;touch-action:manipulation;">📣 汽笛</button>
+      <button id="trn-door-btn" ontouchstart="trnToggleDoor()" onclick="trnToggleDoor()" style="width:56px;height:26px;background:#1a237e;color:#90caf9;border:1px solid #3949ab;border-radius:4px;font-size:10px;font-weight:bold;cursor:pointer;touch-action:manipulation;">🚪 扉</button>
+      <div id="trn-door-status" style="font-size:9px;color:#ff6d00;text-align:center;font-weight:bold;height:13px;">扉 閉</div>
+      <button ontouchstart="trnToggleWeather()" onclick="trnToggleWeather()" style="width:56px;height:20px;background:#283593;color:#90caf9;border:1px solid #3949ab;border-radius:4px;font-size:9px;cursor:pointer;touch-action:manipulation;">天候変更</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:2px;">
+      <div style="font-size:9px; color:#ef9a9a; text-align:center; font-weight:bold; letter-spacing:1px;">🛑 制動ノッチ</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:2px;">
+        <button id="trn-b8" ontouchstart="trnSetB(8)" onclick="trnSetB(8)" style="height:26px;background:#7f0000;color:#ffcdd2;border:1px solid #c62828;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">B8</button>
+        <button id="trn-b6" ontouchstart="trnSetB(6)" onclick="trnSetB(6)" style="height:26px;background:#7f0000;color:#ffcdd2;border:1px solid #c62828;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">B6</button>
+        <button id="trn-b4" ontouchstart="trnSetB(4)" onclick="trnSetB(4)" style="height:26px;background:#7f0000;color:#ffcdd2;border:1px solid #c62828;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">B4</button>
+        <button id="trn-b3" ontouchstart="trnSetB(3)" onclick="trnSetB(3)" style="height:26px;background:#b71c1c;color:#ffcdd2;border:1px solid #e53935;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">B3</button>
+        <button id="trn-b0" ontouchstart="trnSetB(0)" onclick="trnSetB(0)" style="height:26px;background:#263238;color:#90a4ae;border:1px solid #455a64;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;touch-action:manipulation;">切</button>
+        <button id="trn-eb" ontouchstart="trnSetEB()" onclick="trnSetEB()" style="height:26px;background:#e65100;color:#fff;border:1px solid #ff6d00;border-radius:4px;font-size:10px;font-weight:bold;cursor:pointer;touch-action:manipulation;">EB</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var cv = document.getElementById('trn-cv');
+  if(!cv) return;
+  var ctx = cv.getContext('2d');
+  var spdCv = document.getElementById('trn-spd-cv');
+  var spdCtx = spdCv ? spdCv.getContext('2d') : null;
+  var speed=0, position=0, powerNotch=0, brakeNotch=0, isEB=false;
+  var doorOpen=false, hornActive=0, frame=0, score=100;
+  var stoppedAtStation=false, currentStationIdx=0;
+  var lastTime=0, railOffset=0;
+  var weatherMode=0; // 0=晴 1=雨 2=雪 3=夜
+  var weatherNames=['晴れ☀️','雨🌧️','雪❄️','夜🌙'];
+  var rainDrops=[], snowFlakes=[];
+  for(var ri=0;ri<30;ri++) rainDrops.push({x:Math.random()*600,y:Math.random()*280,s:Math.random()*8+6});
+  for(var si=0;si<50;si++) snowFlakes.push({x:Math.random()*600,y:Math.random()*280,r:Math.random()*3+1,vx:Math.random()*0.8-0.4});
+
+  var stations=[
+    {name:'起点駅', pos:0, limit:0},
+    {name:'北公園駅', pos:700, limit:75},
+    {name:'市役所前', pos:1600, limit:85},
+    {name:'中央駅', pos:2700, limit:70},
+    {name:'工場前駅', pos:3800, limit:90},
+    {name:'港南駅', pos:4900, limit:80},
+    {name:'終点駅', pos:5800, limit:60}
+  ];
+  var speedLimits=[75,85,90,85,90,80,60];
+  var trackSections=[
+    {s:0,e:300,curve:0,ud:0},{s:300,e:600,curve:0.55,ud:2},{s:600,e:900,curve:-0.4,ud:-1},
+    {s:900,e:1200,curve:0,ud:3},{s:1200,e:1600,curve:0.7,ud:0},{s:1600,e:2000,curve:-0.5,ud:-2},
+    {s:2000,e:2400,curve:0,ud:0},{s:2400,e:2800,curve:0.6,ud:1},{s:2800,e:3200,curve:0,ud:0},
+    {s:3200,e:3600,curve:-0.65,ud:2},{s:3600,e:4000,curve:0,ud:-1},{s:4000,e:4400,curve:0.45,ud:0},
+    {s:4400,e:4800,curve:-0.3,ud:1},{s:4800,e:5200,curve:0,ud:0},{s:5200,e:5800,curve:0.2,ud:0}
+  ];
+  var accelTable=[0,2.4,3.8,5.0,6.3,7.8];
+  var brakeTable=[0,1.6,3.2,4.6,5.8,7.0,8.2,9.4,10.5];
+  var ebDecel=14.0;
+
+  function getTrackInfo(pos){
+    for(var i=0;i<trackSections.length;i++){
+      if(pos>=trackSections[i].s&&pos<trackSections[i].e) return trackSections[i];
+    }
+    return {curve:0,ud:0};
+  }
+  function getSpeedLimit(pos){
+    for(var i=0;i<stations.length-1;i++){
+      if(pos>=stations[i].pos&&pos<stations[i+1].pos) return speedLimits[i];
+    }
+    return 60;
+  }
+  function getSignal(pos){
+    var next=stations[currentStationIdx];
+    if(!next) return 'G';
+    var d=next.pos-pos;
+    if(d<0) return 'G';
+    if(d<55) return 'R';
+    if(d<180) return 'Y';
+    if(d<450) return 'YY';
+    return 'G';
+  }
+
+  function highlightBtn(ids, activeId, activeColor){
+    ids.forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el) return;
+      el.style.boxShadow=(id===activeId)?('0 0 10px '+activeColor+', 0 0 3px '+activeColor):'';
+      el.style.transform=(id===activeId)?'scale(1.08)':'';
+    });
+  }
+
+  window.trnSetP=function(n){
+    if(doorOpen||stoppedAtStation) return;
+    powerNotch=n; brakeNotch=0; isEB=false;
+    var el=document.getElementById('trn-pn'); if(el){el.innerText=n>0?'P'+n:'切';}
+    var el2=document.getElementById('trn-bn'); if(el2) el2.innerText='切';
+    highlightBtn(['trn-p0','trn-p1','trn-p2','trn-p3','trn-p4','trn-p5'],n>0?'trn-p'+n:'trn-p0','#00e676');
+    highlightBtn(['trn-b0','trn-b3','trn-b4','trn-b6','trn-b8','trn-eb'],'','#ff6d00');
+  };
+  window.trnSetB=function(n){
+    brakeNotch=n; powerNotch=0; isEB=false;
+    var el=document.getElementById('trn-bn'); if(el){el.innerText=n>0?'B'+n:'切'; el.style.color='#ff6d00';}
+    var el2=document.getElementById('trn-pn'); if(el2) el2.innerText='切';
+    var bmap={0:'trn-b0',3:'trn-b3',4:'trn-b4',6:'trn-b6',8:'trn-b8'};
+    highlightBtn(['trn-b0','trn-b3','trn-b4','trn-b6','trn-b8','trn-eb'],bmap[n]||'','#ff6d00');
+    highlightBtn(['trn-p0','trn-p1','trn-p2','trn-p3','trn-p4','trn-p5'],'','#00e676');
+  };
+  window.trnSetEB=function(){
+    isEB=true; brakeNotch=9; powerNotch=0;
+    var el=document.getElementById('trn-bn'); if(el){el.innerText='EB!!!'; el.style.color='#ff1744';}
+    var el2=document.getElementById('trn-pn'); if(el2) el2.innerText='切';
+    highlightBtn(['trn-b0','trn-b3','trn-b4','trn-b6','trn-b8','trn-eb'],'trn-eb','#ff6d00');
+  };
+  window.trnHorn=function(){ hornActive=12; };
+  window.trnToggleDoor=function(){
+    if(speed>0.8){showPopup('⚠️ 速度が0でないと\\n扉は操作できません！','#ff1744'); return;}
+    if(!stoppedAtStation&&!doorOpen){showPopup('⚠️ 停車位置ではありません\\nもう少し進んでください','#ff6d00'); return;}
+    doorOpen=!doorOpen;
+    var ds=document.getElementById('trn-door-status'); if(ds){ds.innerText=doorOpen?'扉 開 🟢':'扉 閉'; ds.style.color=doorOpen?'#00e676':'#ff6d00';}
+    if(!doorOpen&&stoppedAtStation){
+      stoppedAtStation=false; currentStationIdx++;
+      if(currentStationIdx>=stations.length){
+        currentStationIdx=0; position=0; speed=0;
+        showPopup('🏁 終点到着！お疲れ様でした\\n乗客満足度: '+Math.round(score)+'%\\n\\nゲームをリスタートします','#ffd740');
+        score=100;
+      }
+    }
+  };
+  window.trnToggleWeather=function(){
+    weatherMode=(weatherMode+1)%4;
+    var el=document.getElementById('trn-weather'); if(el) el.innerText=weatherNames[weatherMode];
+  };
+
+  function showPopup(msg,color){
+    var el=document.getElementById('trn-popup'); if(!el) return;
+    el.innerText=msg; el.style.display='block'; el.style.borderColor=color||'#ffd740';
+    clearTimeout(el._t); el._t=setTimeout(function(){el.style.display='none';},2400);
+  }
+
+  function physicsUpdate(dt){
+    if(doorOpen) return;
+    var decel=isEB?ebDecel:(brakeTable[brakeNotch]||0);
+    var accel=powerNotch>0?accelTable[powerNotch]:0;
+    var sec=getTrackInfo(position);
+    var gradient=sec.ud*0.09;
+    var limit=getSpeedLimit(position);
+    // Rain/snow slippery
+    var tractionFactor=(weatherMode===1)?0.88:(weatherMode===2)?0.75:1.0;
+    if(accel>0){
+      speed+=(accel*tractionFactor-gradient)*dt;
+      if(speed>limit+5) score=Math.max(0,score-0.25);
+    } else if(decel>0){
+      speed-=(decel*tractionFactor+gradient*0.4)*dt;
+      if(speed<0) speed=0;
+    } else {
+      speed-=(0.5+gradient)*dt;
+      if(speed<0) speed=0;
+    }
+    if(speed<0) speed=0;
+    // EB sparks
+    var sig=getSignal(position);
+    if(sig==='R'&&speed>4&&(stations[currentStationIdx].pos-position)<25){
+      score=Math.max(0,score-1.2);
+    }
+    position+=(speed/3.6)*dt;
+    var nextSt=stations[currentStationIdx];
+    if(nextSt&&position>=nextSt.pos-4&&position<=nextSt.pos+35&&speed<1.5&&!stoppedAtStation){
+      var overrun=Math.abs(position-nextSt.pos);
+      var grade=overrun<0.5?'◎ 完全停車！ +100':overrun<2?'○ 優秀停車 +80':overrun<6?'△ 普通停車 +50':'× 停車ズレ +20';
+      var bonus=overrun<0.5?100:overrun<2?80:overrun<6?50:20;
+      score=Math.min(100,score+bonus*0.05);
+      speed=0; powerNotch=0; brakeNotch=3; isEB=false;
+      stoppedAtStation=true;
+      var el=document.getElementById('trn-pn'); if(el) el.innerText='切';
+      var el2=document.getElementById('trn-bn'); if(el2){el2.innerText='B3'; el2.style.color='#ff6d00';}
+      showPopup('🚉 '+nextSt.name+'\\n'+grade,'#00e5ff');
+      setTimeout(function(){showPopup('🚪 扉ボタンで乗降\\n乗降後もう一度押して出発','#76ff03');},2600);
+    }
+    if(nextSt&&position>nextSt.pos+50&&speed>4){
+      showPopup('⛔ オーバーラン！\\n大幅な停車位置超過','#ff1744');
+      score=Math.max(0,score-18);
+      trnSetEB();
+    }
+  }
+
+  function drawScene(){
+    var W=cv.width, H=cv.height;
+    ctx.clearRect(0,0,W,H);
+    var sec=getTrackInfo(position);
+    var curve=sec.curve, updown=sec.ud;
+    var isNight=(weatherMode===3);
+    var isRain=(weatherMode===1);
+    var isSnow=(weatherMode===2);
+
+    // Sky gradient
+    var skyG=ctx.createLinearGradient(0,0,0,H*0.54);
+    if(isNight){skyG.addColorStop(0,'#020817');skyG.addColorStop(1,'#0a1628');}
+    else if(isRain){skyG.addColorStop(0,'#263238');skyG.addColorStop(1,'#455a64');}
+    else if(isSnow){skyG.addColorStop(0,'#90a4ae');skyG.addColorStop(1,'#cfd8dc');}
+    else{skyG.addColorStop(0,'#0d47a1');skyG.addColorStop(1,'#1976d2');}
+    ctx.fillStyle=skyG; ctx.fillRect(0,0,W,H*0.54);
+
+    // Clouds
+    if(!isNight){
+      ctx.fillStyle=isRain?'rgba(80,100,110,0.7)':'rgba(255,255,255,0.55)';
+      [[0.1,0.08,35,18],[0.35,0.06,50,20],[0.6,0.1,42,16],[0.8,0.07,38,15]].forEach(function(c){
+        ctx.beginPath(); ctx.ellipse(W*c[0],H*c[1],c[2],c[3],0,0,Math.PI*2); ctx.fill();
+      });
+    }
+
+    // Stars (night)
+    if(isNight){
+      ctx.fillStyle='rgba(255,255,255,0.8)';
+      for(var s2=0;s2<60;s2++){
+        var sx=(Math.sin(s2*1234.5)*0.5+0.5)*W;
+        var sy=(Math.cos(s2*876.3)*0.5+0.5)*H*0.5;
+        var ss=Math.random()<0.05?1.8:1;
+        ctx.fillRect(sx,sy,ss,ss);
+      }
+      // Moon
+      ctx.fillStyle='#fffde7';
+      ctx.beginPath(); ctx.arc(W*0.82,H*0.1,10,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(255,253,200,0.2)';
+      ctx.beginPath(); ctx.arc(W*0.82,H*0.1,20,0,Math.PI*2); ctx.fill();
+    } else {
+      // Sun
+      ctx.fillStyle='#fff176';
+      ctx.beginPath(); ctx.arc(W*0.78,H*0.1,14,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(255,241,118,0.18)';
+      ctx.beginPath(); ctx.arc(W*0.78,H*0.1,26,0,Math.PI*2); ctx.fill();
+    }
+
+    // Mountains
+    var mtColor=isNight?'#0d1f2d':(isSnow?'#e0e8ef':'#1a4a2e');
+    var mtSnow=isSnow||false;
+    ctx.fillStyle=mtColor;
+    ctx.beginPath(); ctx.moveTo(0,H*0.52);
+    [[0.08,0.27],[0.18,0.44],[0.3,0.2],[0.42,0.36],[0.55,0.16],[0.68,0.32],[0.82,0.19],[0.95,0.35],[1,0.44]].forEach(function(p){ctx.lineTo(W*p[0],H*p[1]);});
+    ctx.lineTo(W,H*0.54); ctx.fill();
+    // Snow caps
+    if(mtSnow||isSnow){
+      ctx.fillStyle='rgba(255,255,255,0.85)';
+      [[0.3,0.2],[0.55,0.16],[0.82,0.19]].forEach(function(p){
+        ctx.beginPath(); ctx.moveTo(W*p[0],H*p[1]); ctx.lineTo(W*(p[0]-0.05),H*(p[1]+0.06)); ctx.lineTo(W*(p[0]+0.05),H*(p[1]+0.06)); ctx.fill();
+      });
+    }
+
+    // Horizon buildings
+    ctx.fillStyle=isNight?'#0d1520':'#1a2f3f';
+    [[0.03,0.08,0.05],[0.1,0.05,0.04],[0.16,0.11,0.06],[0.65,0.07,0.05],[0.72,0.1,0.07],[0.83,0.05,0.04]].forEach(function(b){
+      ctx.fillRect(W*b[0],H*(0.53-b[1]),W*b[2],H*b[1]);
+      // windows
+      ctx.fillStyle=isNight?'rgba(255,220,60,0.7)':'rgba(100,180,255,0.4)';
+      for(var wy=0;wy<3;wy++) for(var wx=0;wx<2;wx++){
+        if(isNight&&Math.random()>0.3) ctx.fillRect(W*(b[0]+0.005+wx*0.013),H*(0.53-b[1]+0.01+wy*0.038),W*0.009,H*0.022);
+        else if(!isNight) ctx.fillRect(W*(b[0]+0.005+wx*0.013),H*(0.53-b[1]+0.01+wy*0.038),W*0.009,H*0.022);
+      }
+      ctx.fillStyle=isNight?'#0d1520':'#1a2f3f';
+    });
+
+    // Ground
+    var gndG=ctx.createLinearGradient(0,H*0.52,0,H);
+    if(isSnow){gndG.addColorStop(0,'#e8edf0');gndG.addColorStop(1,'#cfd8dc');}
+    else if(isNight){gndG.addColorStop(0,'#0d1f0a');gndG.addColorStop(1,'#060f05');}
+    else if(isRain){gndG.addColorStop(0,'#1b4020');gndG.addColorStop(1,'#0d2010');}
+    else{gndG.addColorStop(0,'#2e7d32');gndG.addColorStop(1,'#1b5e20');}
+    ctx.fillStyle=gndG; ctx.fillRect(0,H*0.52,W,H*0.48);
+
+    // Track perspective
+    var vanishX=W/2+curve*55;
+    var horizY=H*0.54+updown*1.2;
+
+    // Ballast bed
+    for(var y=H;y>=horizY;y--){
+      var t=(y-horizY)/(H-horizY);
+      var rw=180*t;
+      var cx_=vanishX+(W/2-vanishX)*(1-t)*0.78;
+      var ballastColor=isSnow?'#cfd8dc':(t>0.25?'#607d8b':'#78909c');
+      ctx.fillStyle=ballastColor;
+      ctx.fillRect(cx_-rw*0.75,y,rw*1.5,1);
+    }
+
+    // Sleepers
+    railOffset+=speed/3.6*0.04;
+    for(var i=0;i<20;i++){
+      var st2=((i/20)+(railOffset%1))%1;
+      var sy=horizY+st2*(H-horizY)*0.96;
+      var sw=(sy-horizY)/(H-horizY)*96;
+      var scx=vanishX+(W/2-vanishX)*(1-(sy-horizY)/(H-horizY))*0.72;
+      ctx.fillStyle=isSnow?'#a0a0a0':'#5d4037';
+      ctx.fillRect(scx-sw*0.68,sy-sw*0.04,sw*1.36,sw*0.085);
+      ctx.strokeStyle=isSnow?'#888':'#4e342e'; ctx.lineWidth=0.5;
+      ctx.strokeRect(scx-sw*0.68,sy-sw*0.04,sw*1.36,sw*0.085);
+    }
+
+    // Rails (two)
+    var railColor=isSnow?'#c0c8cc':(isNight?'#90a4ae':'#b0bec5');
+    for(var ri=0;ri<2;ri++){
+      var roff=(ri===0?-1:1);
+      ctx.strokeStyle=railColor; ctx.lineWidth=3;
+      ctx.beginPath();
+      ctx.moveTo(vanishX+roff*3,horizY);
+      ctx.lineTo(vanishX+(W/2-vanishX)*0.75+roff*62,H*0.93);
+      ctx.stroke();
+      // Rail shine
+      ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(vanishX+roff*2.5,horizY);
+      ctx.lineTo(vanishX+(W/2-vanishX)*0.75+roff*61,H*0.93);
+      ctx.stroke();
+    }
+
+    // Catenary poles
+    for(var pi=0;pi<6;pi++){
+      var pt=((pi/6)+(position*0.003%1))%1;
+      var py=horizY+pt*(H*0.28-horizY);
+      if(py<horizY) continue;
+      var ph=(py-horizY)/(H-horizY);
+      var pcx=vanishX+(W/2-vanishX)*(1-ph)*0.7;
+      var poleH=50*ph;
+      ctx.strokeStyle=isNight?'#607d8b':'#9e9e9e'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(pcx+58*ph,py); ctx.lineTo(pcx+58*ph,py-poleH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pcx-58*ph,py); ctx.lineTo(pcx-58*ph,py-poleH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pcx-63*ph,py-poleH); ctx.lineTo(pcx+63*ph,py-poleH); ctx.stroke();
+      // Insulator glow (night)
+      if(isNight){
+        ctx.fillStyle='rgba(80,200,255,0.4)';
+        ctx.beginPath(); ctx.arc(pcx-58*ph,py-poleH,ph*4,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(pcx+58*ph,py-poleH,ph*4,0,Math.PI*2); ctx.fill();
+      }
+    }
+    // Catenary wire
+    ctx.strokeStyle='rgba(180,190,200,0.65)'; ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(vanishX,horizY-4);
+    ctx.lineTo(vanishX+(W/2-vanishX)*0.68+58*(H*0.3-horizY)/(H-horizY),H*0.63); ctx.stroke();
+
+    // Trees
+    for(var ti=0;ti<10;ti++){
+      var toff=((position*0.0045+ti*0.1)%1);
+      var ty=horizY+toff*(H*0.72-horizY);
+      if(ty<horizY+4) continue;
+      var th=(ty-horizY)/(H-horizY);
+      var tcx=vanishX+(W/2-vanishX)*(1-th)*0.7+(ti%2===0?1:-1)*(82+ti*2.5)*th;
+      var treeH=32*th, treeW=17*th;
+      ctx.fillStyle='#5d4037';
+      ctx.fillRect(tcx-treeW*0.1,ty-treeH,treeW*0.2,treeH*0.52);
+      var canopyColor=isSnow?'#a5d6a7':(isNight?'#1b3a1f':'#2e7d32');
+      ctx.fillStyle=canopyColor;
+      ctx.beginPath(); ctx.arc(tcx,ty-treeH*0.72,treeW*0.52,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=isSnow?'rgba(220,240,255,0.7)':(isNight?'#256029':'#43a047');
+      ctx.beginPath(); ctx.arc(tcx-treeW*0.15,ty-treeH*0.88,treeW*0.38,0,Math.PI*2); ctx.fill();
+      if(isSnow){
+        ctx.fillStyle='rgba(255,255,255,0.75)';
+        ctx.beginPath(); ctx.arc(tcx,ty-treeH*0.95,treeW*0.3,0,Math.PI*2); ctx.fill();
+      }
+    }
+
+    // Station platform (approaching)
+    var nextSt=stations[currentStationIdx];
+    if(nextSt){
+      var dstSt=nextSt.pos-position;
+      if(dstSt>0&&dstSt<500){
+        var stT=1-dstSt/500;
+        var stY=horizY+stT*(H-horizY)*0.82;
+        var stW=95*stT;
+        var stCx=vanishX+(W/2-vanishX)*(1-stT)*0.72;
+        ctx.fillStyle=isSnow?'#eceff1':'#e0e0e0';
+        ctx.fillRect(stCx-stW*0.65-stW*0.65,stY-stW*0.12,stW*0.65,stW*0.22);
+        ctx.fillRect(stCx+stW*0.65,stY-stW*0.12,stW*0.65,stW*0.22);
+        // Canopy
+        ctx.fillStyle=isNight?'rgba(30,60,90,0.8)':'rgba(66,165,245,0.6)';
+        ctx.fillRect(stCx-stW*0.65-stW*0.65,stY-stW*0.55,stW*0.65,stW*0.065);
+        ctx.fillRect(stCx+stW*0.65,stY-stW*0.55,stW*0.65,stW*0.065);
+        // Station sign board
+        if(stT>0.5){
+          ctx.fillStyle='#0d47a1';
+          ctx.fillRect(stCx-28,stY-stT*24-14,56,14);
+          ctx.fillStyle='#fff'; ctx.font=(7+stT*5)+'px sans-serif'; ctx.textAlign='center';
+          ctx.fillText(nextSt.name,stCx,stY-stT*24-3);
+          ctx.textAlign='left';
+        }
+        // Waiting passengers
+        if(stT>0.65){
+          ctx.fillStyle='rgba(80,120,180,0.7)';
+          for(var pi2=0;pi2<3;pi2++){
+            ctx.beginPath(); ctx.arc(stCx-stW*0.65-stW*0.3+pi2*stW*0.15,stY-stW*0.18,stW*0.07,0,Math.PI*2); ctx.fill();
+          }
+        }
+      }
+    }
+
+    // Signal pole
+    var sigState=getSignal(position);
+    var sigY=H*0.32, sigX=W*0.56;
+    ctx.fillStyle='#263238'; ctx.fillRect(sigX-2,sigY,5,H*0.22);
+    ctx.fillStyle='#1a1a1a'; ctx.fillRect(sigX-7,sigY,15,28);
+    // Lights
+    var lights=sigState==='G'?[false,false,true]:sigState==='Y'?[false,true,false]:sigState==='YY'?[false,true,true]:[true,false,false];
+    var lcols=['#ff1744','#ffd740','#00e676'];
+    lights.forEach(function(on,idx){
+      ctx.fillStyle=on?lcols[idx]:'#1a1a1a';
+      ctx.beginPath(); ctx.arc(sigX+0.5,sigY+5+idx*9,4,0,Math.PI*2); ctx.fill();
+      if(on){
+        ctx.fillStyle=lcols[idx].replace('#','rgba(')+',0.3)';
+        ctx.fillStyle='rgba(255,255,255,0.15)';
+        ctx.beginPath(); ctx.arc(sigX+0.5,sigY+5+idx*9,8,0,Math.PI*2); ctx.fill();
+      }
+    });
+
+    // Cab interior frame
+    ctx.fillStyle=isNight?'#0a0f18':'#1a1a2e';
+    ctx.fillRect(0,H*0.86,W,H*0.14);
+    // Dashboard
+    ctx.fillStyle=isNight?'#162030':'#263238';
+    ctx.beginPath(); ctx.roundRect&&ctx.roundRect(W*0.04,H*0.87,W*0.92,H*0.11,5); ctx.fill();
+    // Windshield frame
+    ctx.strokeStyle=isNight?'#1e3050':'#2e3f50'; ctx.lineWidth=10;
+    ctx.strokeRect(5,5,W-10,H*0.86-5);
+    // Night headlight glow
+    if(isNight){
+      var lgr=ctx.createRadialGradient(W/2,H*0.85,10,W/2,H*0.5,H*0.55);
+      lgr.addColorStop(0,'rgba(255,255,200,0.28)');
+      lgr.addColorStop(0.5,'rgba(255,255,180,0.08)');
+      lgr.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=lgr; ctx.fillRect(0,0,W,H*0.86);
+    }
+    // Wiper
+    ctx.strokeStyle='rgba(80,80,80,0.55)'; ctx.lineWidth=2.5;
+    ctx.save(); ctx.translate(W/2,H*0.86);
+    ctx.rotate(Math.sin(frame*0.045)*0.65);
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-H*0.42); ctx.stroke();
+    ctx.restore();
+
+    // Horn flash
+    if(hornActive>0){
+      hornActive--;
+      ctx.fillStyle='rgba(255,255,100,0.15)';
+      ctx.beginPath(); ctx.arc(W/2,H*0.45,35+hornActive*2,0,Math.PI*2); ctx.fill();
+    }
+
+    // Rain
+    if(isRain){
+      ctx.strokeStyle='rgba(174,214,241,0.5)'; ctx.lineWidth=1;
+      rainDrops.forEach(function(d){
+        d.y+=speed*0.12+6; d.x+=speed*0.02;
+        if(d.y>H*0.86){d.y=0;d.x=Math.random()*W;}
+        ctx.beginPath(); ctx.moveTo(d.x,d.y); ctx.lineTo(d.x-3,d.y+d.s); ctx.stroke();
+      });
+      // Wet road sheen
+      var wr=ctx.createLinearGradient(0,H*0.7,0,H*0.86);
+      wr.addColorStop(0,'rgba(100,140,180,0)'); wr.addColorStop(1,'rgba(100,150,200,0.25)');
+      ctx.fillStyle=wr; ctx.fillRect(0,H*0.7,W,H*0.16);
+    }
+
+    // Snow
+    if(isSnow){
+      ctx.fillStyle='rgba(255,255,255,0.75)';
+      snowFlakes.forEach(function(f){
+        f.y+=speed*0.04+1.5; f.x+=f.vx+(Math.sin(frame*0.02+f.y*0.01)*0.5);
+        if(f.y>H*0.86){f.y=0;f.x=Math.random()*W;}
+        ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill();
+      });
+    }
+
+    // Door open overlay
+    if(doorOpen&&stoppedAtStation){
+      ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H*0.86);
+      ctx.fillStyle='#e3f2fd'; ctx.font='bold 17px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('🚪 扉開 — 乗客乗降中',W/2,H*0.44);
+      ctx.textAlign='left';
+    }
+
+    // EB warning flash
+    if(isEB&&frame%8<4){
+      ctx.fillStyle='rgba(255,0,0,0.12)'; ctx.fillRect(0,0,W,H);
+    }
+  }
+
+  function drawSpeedometer(){
+    if(!spdCtx) return;
+    var W2=80,H2=72,cx=40,cy=42,r=26;
+    spdCtx.clearRect(0,0,W2,H2);
+    spdCtx.strokeStyle='#2a3a4a'; spdCtx.lineWidth=5;
+    spdCtx.beginPath(); spdCtx.arc(cx,cy,r,Math.PI*0.8,Math.PI*2.2); spdCtx.stroke();
+    var maxSpd=120;
+    var ang=Math.PI*0.8+(speed/maxSpd)*Math.PI*1.4;
+    var grd=spdCtx.createLinearGradient(cx-r,cy,cx+r,cy);
+    grd.addColorStop(0,'#00e676'); grd.addColorStop(0.55,'#ffd740'); grd.addColorStop(1,'#ff1744');
+    spdCtx.strokeStyle=grd; spdCtx.lineWidth=5;
+    spdCtx.beginPath(); spdCtx.arc(cx,cy,r,Math.PI*0.8,ang); spdCtx.stroke();
+    // Ticks
+    for(var t2=0;t2<=6;t2++){
+      var ta=Math.PI*0.8+(t2/6)*Math.PI*1.4;
+      spdCtx.strokeStyle='#607d8b'; spdCtx.lineWidth=1.5;
+      spdCtx.beginPath();
+      spdCtx.moveTo(cx+Math.cos(ta)*(r-5),cy+Math.sin(ta)*(r-5));
+      spdCtx.lineTo(cx+Math.cos(ta)*(r+1),cy+Math.sin(ta)*(r+1)); spdCtx.stroke();
+    }
+    // Needle
+    spdCtx.strokeStyle='#ffffff'; spdCtx.lineWidth=2;
+    spdCtx.beginPath(); spdCtx.moveTo(cx,cy);
+    spdCtx.lineTo(cx+Math.cos(ang)*r*0.82,cy+Math.sin(ang)*r*0.82); spdCtx.stroke();
+    spdCtx.fillStyle='#cfd8dc'; spdCtx.beginPath(); spdCtx.arc(cx,cy,3,0,Math.PI*2); spdCtx.fill();
+  }
+
+  function updateHUD(){
+    var next=stations[currentStationIdx];
+    var dist=next?Math.max(0,Math.round(next.pos-position)):0;
+    var el;
+    el=document.getElementById('trn-next'); if(el) el.innerText=next?next.name:'---';
+    el=document.getElementById('trn-dist'); if(el) el.innerText=next?dist+'':'---';
+    el=document.getElementById('trn-limit'); if(el) el.innerText=getSpeedLimit(position);
+    var sig=getSignal(position);
+    el=document.getElementById('trn-sig'); if(el) el.innerText=sig==='G'?'🟢':sig==='Y'||sig==='YY'?'🟡':'🔴';
+    el=document.getElementById('trn-odo'); if(el) el.innerText=Math.round(position);
+    el=document.getElementById('trn-score'); if(el) el.innerText=Math.round(score);
+    el=document.getElementById('trn-spd-num'); if(el) el.innerText=Math.round(speed);
+  }
+
+  function loop(ts){
+    if(!document.getElementById('trn-cv')) return;
+    var dt=Math.min((ts-(lastTime||ts))/1000,0.05);
+    lastTime=ts; frame++;
+    physicsUpdate(dt);
+    drawScene();
+    drawSpeedometer();
+    updateHUD();
+    requestAnimationFrame(loop);
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowUp'||e.key==='q'){powerNotch=Math.min(5,powerNotch+1);trnSetP(powerNotch);}
+    if(e.key==='ArrowDown'||e.key==='z'){brakeNotch=Math.min(8,brakeNotch+1);trnSetB(brakeNotch);}
+    if(e.key===' '){e.preventDefault();trnSetEB();}
+    if(e.key==='h'||e.key==='H') trnHorn();
+    if(e.key==='d'||e.key==='D') trnToggleDoor();
+    if(e.key==='w'||e.key==='W') trnToggleWeather();
+  });
+
+  // 変更点: DOMが確実に読み込まれるのを待ってからループを起動
+  setTimeout(function() { requestAnimationFrame(loop); }, 100);
+})();
+<\/script>`
         }
     ];
 
     let zIndex = 1000;
 let installedIds = JSON.parse(localStorage.getItem('my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver', 'babanuki'];
+    if(!installedIds.includes('train')) installedIds.push('train');
 let uploadedFiles = [];
 
     window.onload = () => {
@@ -1643,6 +2225,7 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
                 
                 // アプリや壁紙のロード状態をユーザーごとに上書き
                 installedIds = JSON.parse(localStorage.getItem(prefix + 'my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver', 'babanuki'];
+                if(!installedIds.includes('train')) installedIds.push('train');
                 const savedWall = localStorage.getItem(prefix + 'my_wall');
                 if (savedWall) {
                     document.getElementById('wall').style.backgroundImage = `url(${savedWall})`;
