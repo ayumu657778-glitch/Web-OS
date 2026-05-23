@@ -8,7 +8,7 @@
         /* ページ全体は選択禁止 */
 body {
   -webkit-user-select: none;
-user-select: none;
+  user-select: none;
 }
 
 /* 入力フォームやテキストエリアは選択を許可 */
@@ -171,7 +171,7 @@ border:3px solid #34495e;"></div>
                 var othB = Array(64).fill(0); var turn = 1; 
                 var dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
              
- 
+   
    function initOthello(){
                     othB.fill(0); othB[27]=2; othB[28]=1; othB[35]=1; othB[36]=2; turn=1; drawOth();
                 }
@@ -704,7 +704,7 @@ cv = document.getElementById('drv-cv'); if(!cv) return; var ctx = cv.getContext(
                     window.drvToggleATMT = function() { isAT = !isAT; };
                     window.drvShift = function(dir) {
                        
- if(!isAT && gear === 'D') {
+  if(!isAT && gear === 'D') {
                             gNum += dir;
 if(gNum < 1) gNum = 1;
                             if(gNum > 6) gNum = 6;
@@ -1040,134 +1040,12 @@ requestAnimationFrame(loop);
                     setTimeout(() => { window.drvSetGear('P'); loop(); }, 200);
 })();
             <\/script>`
-        },
-        /* ▼ ここから追加: ミュージックアプリ ▼ */
-        { id:'music', n:'ミュージック', i:'🎵', t:'html', c:`
-            <div class="pad" style="height:100%; display:flex; flex-direction:column; background:#1e1e1e; color:white; box-sizing:border-box;">
-                <h3 style="margin-top:0;">🎵 ミュージック</h3>
-                <label class="upload-label" style="display:inline-block; margin-bottom:10px; background:#1db954; text-align:center;">
-                    ＋ 音楽を追加 (MP3等)
-                    <input type="file" style="display:none" accept="audio/*" onchange="window.addMusic(event)">
-                </label>
-                <div id="music-list" style="flex:1; overflow-y:auto; background:#2c2c2c; padding:10px; border-radius:8px;"></div>
-                <audio id="music-player" controls style="width:100%; margin-top:10px; outline:none;"></audio>
-            </div>
-            <script>
-                window.musicFiles = JSON.parse(localStorage.getItem('webos_music') || '[]');
-                window.renderMusic = function() {
-                    const list = document.getElementById('music-list');
-                    if(!list) return;
-                    list.innerHTML = window.musicFiles.length === 0 ? '<div style="color:#888;">音楽がありません</div>' : '';
-                    window.musicFiles.forEach((m, i) => {
-                        const item = document.createElement('div');
-                        item.style = "padding:8px; border-bottom:1px solid #444; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:13px;";
-                        item.innerHTML = '<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:70%;">' + m.name + '</span><button onclick="window.delMusic('+i+'); event.stopPropagation();" style="background:#e74c3c; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer; font-size:11px;">削除</button>';
-                        item.onclick = () => {
-                            const p = document.getElementById('music-player');
-                            p.src = m.data;
-                            p.play();
-                        };
-                        list.appendChild(item);
-                    });
-                };
-                window.addMusic = function(e) {
-                    const f = e.target.files[0]; if(!f) return;
-                    const r = new FileReader();
-                    r.onload = (ev) => {
-                        try {
-                            window.musicFiles.push({name: f.name, data: ev.target.result});
-                            localStorage.setItem('webos_music', JSON.stringify(window.musicFiles));
-                            window.renderMusic();
-                        } catch(err) {
-                            alert("保存容量の限界です！他のデータを削除してください。\\n(※ブラウザのlocalStorage容量制限)");
-                        }
-                    };
-                    r.readAsDataURL(f);
-                    e.target.value = '';
-                };
-                window.delMusic = function(i) {
-                    window.musicFiles.splice(i, 1);
-                    localStorage.setItem('webos_music', JSON.stringify(window.musicFiles));
-                    window.renderMusic();
-                };
-                setTimeout(window.renderMusic, 100);
-            <\/script>
-        `},
-        /* ▼ ここから追加: フォトアプリ ▼ */
-        { id:'photo', n:'フォト', i:'🖼️', t:'html', c:`
-            <div class="pad" style="height:100%; display:flex; flex-direction:column; background:#f0f0f0; box-sizing:border-box;">
-                <h3 style="margin-top:0; color:#333;">🖼️ フォトギャラリー</h3>
-                <label class="upload-label" style="display:inline-block; margin-bottom:10px; background:#e1306c; text-align:center;">
-                    ＋ 写真を追加
-                    <input type="file" style="display:none" accept="image/*" onchange="window.addPhoto(event)">
-                </label>
-                <div id="photo-list" style="flex:1; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); gap:10px; align-content:start;"></div>
-            </div>
-            <script>
-                window.photoFiles = JSON.parse(localStorage.getItem('webos_photos') || '[]');
-                window.renderPhotos = function() {
-                    const list = document.getElementById('photo-list');
-                    if(!list) return;
-                    list.innerHTML = window.photoFiles.length === 0 ? '<div style="color:#888; grid-column:1/-1;">写真がありません</div>' : '';
-                    window.photoFiles.forEach((p, i) => {
-                        const item = document.createElement('div');
-                        item.style = "position:relative; width:100%; padding-bottom:100%; background:url('"+p.data+"') center/cover; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.2); cursor:pointer;";
-                        item.onclick = () => window.viewPhotoFull(p.data);
-                        
-                        const delBtn = document.createElement('button');
-                        delBtn.innerText = '×';
-                        delBtn.style = "position:absolute; top:4px; right:4px; background:rgba(255,0,0,0.8); color:white; border:none; border-radius:50%; width:22px; height:22px; font-size:12px; cursor:pointer; line-height:1;";
-                        delBtn.onclick = (e) => { e.stopPropagation(); window.delPhoto(i); };
-                        
-                        item.appendChild(delBtn);
-                        list.appendChild(item);
-                    });
-                };
-                window.addPhoto = function(e) {
-                    const f = e.target.files[0]; if(!f) return;
-                    const r = new FileReader();
-                    r.onload = (ev) => {
-                        try {
-                            window.photoFiles.push({name: f.name, data: ev.target.result});
-                            localStorage.setItem('webos_photos', JSON.stringify(window.photoFiles));
-                            window.renderPhotos();
-                        } catch(err) {
-                            alert("保存容量の限界です！他のデータを削除してください。\\n(※ブラウザのlocalStorage容量制限)");
-                        }
-                    };
-                    r.readAsDataURL(f);
-                    e.target.value = '';
-                };
-                window.delPhoto = function(i) {
-                    window.photoFiles.splice(i, 1);
-                    localStorage.setItem('webos_photos', JSON.stringify(window.photoFiles));
-                    window.renderPhotos();
-                };
-                window.viewPhotoFull = function(src) {
-                    const v = document.createElement('div');
-                    v.style = "position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:999999; display:flex; align-items:center; justify-content:center; flex-direction:column;";
-                    v.innerHTML = '<img src="'+src+'" style="max-width:90%; max-height:80%; border-radius:8px; box-shadow:0 0 20px rgba(0,0,0,0.5); object-fit:contain;"><button style="margin-top:20px; padding:10px 20px; font-size:16px; cursor:pointer; border:none; border-radius:5px; background:#fff; color:#000;" onclick="this.parentElement.remove()">閉じる</button>';
-                    document.body.appendChild(v);
-                };
-                setTimeout(window.renderPhotos, 100);
-            <\/script>
-        `}
+        }
     ];
 
     let zIndex = 1000;
 let installedIds = JSON.parse(localStorage.getItem('my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver'];
 let uploadedFiles = [];
-
-// ▼新規アプリを自動インストール状態にするための追加コード▼
-if (!installedIds.includes('music') && !localStorage.getItem('webos_music_added')) {
-    installedIds.push('music');
-    localStorage.setItem('webos_music_added', '1');
-}
-if (!installedIds.includes('photo') && !localStorage.getItem('webos_photo_added')) {
-    installedIds.push('photo');
-    localStorage.setItem('webos_photo_added', '1');
-}
-// ▲ここまで追加▲
 
     window.onload = () => {
         const savedWall = localStorage.getItem('my_wall');
@@ -1517,6 +1395,187 @@ document.getElementById('login-pwd').value = ''; document.getElementById('login-
         }
         function unlockOS() { const screen = document.getElementById('login-screen');
 screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
+    })();
+
+    /* ==========================================
+       ▼ マルチユーザー拡張機能（エラーを回避する完全版・一行も消さずに追記）
+       ========================================== */
+    (function(){
+        // 既存の（元コードで設定された）window.onload をさらにフックする
+        // これにより、既存のUIセットアップが完全に終わった後に新しいUIへ安全に上書きできます。
+        const existingWindowOnload = window.onload;
+        window.onload = () => {
+            if (existingWindowOnload) existingWindowOnload(); // 元のイベントを処理（ここでエラー回避）
+            initMultiUser(); // その直後にマルチユーザー機能を展開
+        };
+
+        function initMultiUser() {
+            const screen = document.getElementById('login-screen');
+            if (!screen) return;
+
+            let users = JSON.parse(localStorage.getItem('webos_users')) || {};
+            let currentUser = localStorage.getItem('current_user') || 'Administrator';
+            
+            // 管理者パスワードの同期
+            const adminPwd = localStorage.getItem('webos_password');
+            if (adminPwd && !users['Administrator']) {
+                users['Administrator'] = { password: adminPwd };
+                localStorage.setItem('webos_users', JSON.stringify(users));
+            }
+
+            // 既存のログインUIを全消去して、マルチユーザー用のUIを再構築
+            screen.innerHTML = `
+                <div class="login-box" id="mu-login-box">
+                    <div style="font-size: 56px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));">👥</div>
+                    <h2 id="mu-display-name" style="margin-bottom: 5px;">Administrator</h2>
+                    <select id="mu-select" style="width: 100%; padding: 8px; margin-bottom: 10px; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; outline:none;">
+                    </select>
+                    <button id="mu-show-create" style="background: transparent; border: 1px solid rgba(255,255,255,0.4); color: #fff; margin-bottom: 15px; font-size: 12px; padding: 6px; border-radius:4px; width:100%; cursor:pointer;">＋ 新規ユーザーを作成</button>
+                    <input type="password" id="mu-pwd" placeholder="パスワードを入力">
+                    <button id="mu-login-btn">ログイン</button>
+                    <div class="login-error" id="mu-error"></div>
+                </div>
+
+                <div class="login-box" id="mu-create-box" style="display: none;">
+                    <h2>新規ユーザー作成</h2>
+                    <input type="text" id="mu-new-name" placeholder="ユーザー名" style="margin-bottom: 10px;">
+                    <input type="password" id="mu-new-pwd" placeholder="パスワード" style="margin-bottom: 15px;">
+                    <button id="mu-create-btn">作成してログイン</button>
+                    <button id="mu-cancel-btn" style="background: transparent; border: 1px solid rgba(255,255,255,0.4); color: #fff; margin-top: 10px; font-size:14px; width:100%; cursor:pointer;">キャンセル</button>
+                    <div class="login-error" id="mu-create-error"></div>
+                </div>
+            `;
+
+            const select = document.getElementById('mu-select');
+            const updateSelect = () => {
+                select.innerHTML = '';
+                const userNames = Object.keys(users);
+                if (userNames.length === 0) {
+                    // 初回起動時（管理者がまだパスワードを設定していない状態）
+                    document.getElementById('mu-login-box').style.display = 'none';
+                    document.getElementById('mu-create-box').style.display = 'block';
+                    document.getElementById('mu-cancel-btn').style.display = 'none'; // キャンセル不可
+                    return;
+                }
+                userNames.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u; opt.innerText = u; opt.style.color = '#000';
+                    select.appendChild(opt);
+                });
+                select.value = users[currentUser] ? currentUser : userNames[0];
+                document.getElementById('mu-display-name').innerText = select.value;
+            };
+            
+            updateSelect();
+
+            select.addEventListener('change', (e) => {
+                document.getElementById('mu-display-name').innerText = e.target.value;
+            });
+
+            document.getElementById('mu-show-create').onclick = () => {
+                document.getElementById('mu-login-box').style.display = 'none';
+                document.getElementById('mu-create-box').style.display = 'block';
+                document.getElementById('mu-cancel-btn').style.display = 'block';
+            };
+
+            document.getElementById('mu-cancel-btn').onclick = () => {
+                document.getElementById('mu-create-box').style.display = 'none';
+                document.getElementById('mu-login-box').style.display = 'block';
+            };
+
+            document.getElementById('mu-create-btn').onclick = () => {
+                const name = document.getElementById('mu-new-name').value.trim();
+                const pwd = document.getElementById('mu-new-pwd').value;
+                const err = document.getElementById('mu-create-error');
+                if (!name || !pwd) { err.innerText = "ユーザー名とパスワードを入力してください"; return; }
+                if (users[name]) { err.innerText = "そのユーザーは既に存在します"; return; }
+                
+                users[name] = { password: pwd };
+                localStorage.setItem('webos_users', JSON.stringify(users));
+                if (name === 'Administrator') localStorage.setItem('webos_password', pwd);
+                loginAs(name);
+            };
+
+            document.getElementById('mu-login-btn').onclick = attemptLogin;
+            document.getElementById('mu-pwd').onkeypress = (e) => { if(e.key === 'Enter') attemptLogin(); };
+
+            function attemptLogin() {
+                const name = select.value;
+                const pwd = document.getElementById('mu-pwd').value;
+                if(users[name] && users[name].password === pwd) {
+                    loginAs(name);
+                } else {
+                    document.getElementById('mu-error').innerText = "パスワードが間違っています。";
+                    document.getElementById('mu-pwd').value = '';
+                }
+            }
+
+            function loginAs(name) {
+                currentUser = name;
+                localStorage.setItem('current_user', name);
+                const prefix = name === 'Administrator' ? '' : name + '_';
+                
+                // アプリや壁紙のロード状態をユーザーごとに上書き
+                installedIds = JSON.parse(localStorage.getItem(prefix + 'my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver'];
+                const savedWall = localStorage.getItem(prefix + 'my_wall');
+                if (savedWall) {
+                    document.getElementById('wall').style.backgroundImage = `url(${savedWall})`;
+                } else {
+                    document.getElementById('wall').style.backgroundImage = "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1920')";
+                }
+                
+                renderDesktop();
+
+                // 既存のセーブ処理などをユーザー個別のキーでオーバーライド
+                window.saveApps = () => localStorage.setItem(prefix + 'my_apps', JSON.stringify(installedIds));
+                window.uploadWall = (e) => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { 
+                        document.getElementById('wall').style.backgroundImage = `url(${ev.target.result})`; 
+                        localStorage.setItem(prefix + 'my_wall', ev.target.result); 
+                    };
+                    reader.readAsDataURL(file);
+                };
+
+                window.changeOSPassword = () => {
+                    const oldPwd = document.getElementById('change-old-pwd').value; 
+                    const newPwd = document.getElementById('change-new-pwd').value;
+                    const msg = document.getElementById('change-pwd-msg'); 
+                    
+                    if (oldPwd !== users[name].password) { 
+                        msg.style.color = '#ff4d4d'; msg.innerText = '❌ 現在のパスワードが間違っています。';
+                        return; 
+                    }
+                    if (!newPwd.trim()) { 
+                        msg.style.color = '#ff4d4d'; msg.innerText = '❌ 新しいパスワードを入力してください。'; return;
+                    }
+                    users[name].password = newPwd;
+                    localStorage.setItem('webos_users', JSON.stringify(users));
+                    if(name === 'Administrator') localStorage.setItem('webos_password', newPwd);
+                    
+                    msg.style.color = '#27ae60'; msg.innerText = '✔️ パスワードを変更しました！';
+                    document.getElementById('change-old-pwd').value = '';
+                    document.getElementById('change-new-pwd').value = '';
+                };
+
+                // スタートメニューにログアウトボタンを追加
+                const startDiv = document.getElementById('start');
+                let logoutBtn = document.getElementById('mu-logout-btn');
+                if (!logoutBtn) {
+                    logoutBtn = document.createElement('button');
+                    logoutBtn.id = 'mu-logout-btn';
+                    logoutBtn.style = "background:#e74c3c; color:white; border:none; padding:4px 10px; border-radius:4px; margin-right:10px; cursor:pointer;";
+                    logoutBtn.onclick = () => location.reload();
+                    startDiv.lastElementChild.prepend(logoutBtn);
+                }
+                logoutBtn.innerText = `🚪 ログアウト (${name})`;
+
+                // 画面ロック解除アニメーション
+                screen.style.opacity = '0';
+                setTimeout(() => screen.remove(), 500);
+            }
+        }
     })();
 </script>
 </body>
