@@ -1747,12 +1747,18 @@ requestAnimationFrame(loop);
   setTimeout(function() { requestAnimationFrame(loop); }, 100);
 })();
 <\/script>`
-        }
+        },
+        { id:'camera', n:'カメラ', i:'📷', t:'camera_app' },
+        { id:'qrscan', n:'QR読み取り', i:'🔍', t:'qrscan_app' },
+        { id:'qrmaker', n:'QR作成', i:'⬛', t:'qrmaker_app' }
     ];
 
     let zIndex = 1000;
 let installedIds = JSON.parse(localStorage.getItem('my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver', 'babanuki'];
     if(!installedIds.includes('train')) installedIds.push('train');
+    if(!installedIds.includes('camera')) installedIds.push('camera');
+    if(!installedIds.includes('qrscan')) installedIds.push('qrscan');
+    if(!installedIds.includes('qrmaker')) installedIds.push('qrmaker');
 let uploadedFiles = [];
 
     window.onload = () => {
@@ -1860,9 +1866,495 @@ cursor:pointer;">⚠️ システムの初期化 (パスワードもリセット
  
 body.getElementsByTagName('script');
             for(let s of scs) eval(s.innerHTML);
+        } else if (a.t === 'camera_app') {
+            initCameraApp(body, id);
+        } else if (a.t === 'qrscan_app') {
+            initQRScanApp(body, id);
+        } else if (a.t === 'qrmaker_app') {
+            initQRMakerApp(body, id);
         } else {
             body.innerHTML = a.c || 'Content';
         }
+    }
+
+    // ========== 📷 カメラアプリ ==========
+    function initCameraApp(body, winId) {
+        body.style.background = '#1a1a2e';
+        body.style.color = 'white';
+        body.style.display = 'flex';
+        body.style.flexDirection = 'column';
+        body.style.alignItems = 'center';
+        body.style.padding = '10px';
+        body.style.boxSizing = 'border-box';
+        body.style.overflow = 'auto';
+        body.innerHTML = `
+            <h3 style="margin:5px 0;font-size:14px;">📷 カメラ</h3>
+            <video id="camv-${winId}" autoplay playsinline muted style="width:100%;max-width:560px;border-radius:8px;background:#000;max-height:280px;object-fit:cover;"></video>
+            <canvas id="camc-${winId}" style="display:none;"></canvas>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center;">
+                <button id="camstart-${winId}" style="background:#0078d4;color:white;border:none;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;">▶ 起動</button>
+                <button id="camshoot-${winId}" disabled style="background:#e74c3c;color:white;border:none;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;">📸 撮影</button>
+                <button id="camstop-${winId}" disabled style="background:#555;color:white;border:none;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;">⏹ 停止</button>
+                <button id="camflip-${winId}" disabled style="background:#27ae60;color:white;border:none;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;">🔄 反転</button>
+            </div>
+            <div id="camst-${winId}" style="font-size:11px;color:#aaa;margin-top:6px;text-align:center;">▶ 起動ボタンを押してください</div>
+            <div id="camg-${winId}" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;overflow-y:auto;max-height:130px;justify-content:center;width:100%;"></div>
+        `;
+        let stream = null, facing = 'user';
+        const vid = body.querySelector(`#camv-${winId}`);
+        const can = body.querySelector(`#camc-${winId}`);
+        const st  = body.querySelector(`#camst-${winId}`);
+        const gal = body.querySelector(`#camg-${winId}`);
+        const btnStart = body.querySelector(`#camstart-${winId}`);
+        const btnShoot = body.querySelector(`#camshoot-${winId}`);
+        const btnStop  = body.querySelector(`#camstop-${winId}`);
+        const btnFlip  = body.querySelector(`#camflip-${winId}`);
+
+        function start() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                st.innerText = '❌ このブラウザはカメラに対応していません'; return;
+            }
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+            .then(function(s) {
+                stream = s;
+                vid.srcObject = s;
+                vid.play();
+                btnStart.disabled = true; btnShoot.disabled = false;
+                btnStop.disabled = false; btnFlip.disabled = false;
+                st.innerText = '✅ カメラ起動中';
+            })
+            .catch(function(e) {
+                st.innerText = '❌ ' + e.name + ': ' + e.message;
+            });
+        }
+        function stop() {
+            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+            vid.srcObject = null;
+            btnStart.disabled = false; btnShoot.disabled = true;
+            btnStop.disabled = true; btnFlip.disabled = true;
+            st.innerText = '⏹ カメラ停止';
+        }
+        function shoot() {
+            if (!vid.videoWidth) { st.innerText = '⚠️ カメラがまだ準備できていません'; return; }
+            can.width = vid.videoWidth; can.height = vid.videoHeight;
+            can.getContext('2d').drawImage(vid, 0, 0);
+            const dataUrl = can.toDataURL('image/png');
+            const img = document.createElement('img');
+            img.src = dataUrl;
+            img.style.cssText = 'height:80px;border-radius:4px;cursor:pointer;border:2px solid #0078d4;';
+            img.title = 'クリックでダウンロード';
+            img.onclick = () => { const a = document.createElement('a'); a.href = dataUrl; a.download = 'photo_'+Date.now()+'.png'; a.click(); };
+            gal.appendChild(img);
+            st.innerText = '📸 撮影完了！写真をクリックでDL';
+        }
+        function flip() {
+            facing = facing === 'user' ? 'environment' : 'user';
+            if (stream) { stop(); setTimeout(start, 300); }
+        }
+        btnStart.onclick = start;
+        btnShoot.onclick = shoot;
+        btnStop.onclick = stop;
+        btnFlip.onclick = flip;
+        // ウィンドウを閉じたときにカメラを停止
+        const winEl = document.getElementById('win-'+winId);
+        if (winEl) {
+            const closeBtn = winEl.querySelector('.x');
+            if (closeBtn) { const orig = closeBtn.onclick; closeBtn.onclick = () => { stop(); if(orig) orig(); else winEl.remove(); }; }
+        }
+    }
+
+    // ========== 🔍 QRコード読み取りアプリ (BarcodeDetector API使用・オフライン) ==========
+    function initQRScanApp(body, winId) {
+        body.style.background = '#0f3460';
+        body.style.color = 'white';
+        body.style.display = 'flex';
+        body.style.flexDirection = 'column';
+        body.style.alignItems = 'center';
+        body.style.padding = '10px';
+        body.style.boxSizing = 'border-box';
+        body.style.overflow = 'auto';
+        body.innerHTML = `
+            <h3 style="margin:5px 0;font-size:14px;">🔍 QRコード読み取り</h3>
+            <div style="position:relative;width:100%;max-width:480px;">
+                <video id="qrv-${winId}" autoplay playsinline muted style="width:100%;border-radius:8px;background:#000;max-height:260px;object-fit:cover;display:block;"></video>
+            </div>
+            <canvas id="qrc-${winId}" style="display:none;"></canvas>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center;">
+                <button id="qrstart-${winId}" style="background:#16213e;color:#00d4ff;border:1px solid #00d4ff;padding:7px 14px;border-radius:20px;cursor:pointer;font-size:12px;">▶ スキャン開始</button>
+                <button id="qrstop-${winId}" disabled style="background:#16213e;color:#ff6b6b;border:1px solid #ff6b6b;padding:7px 14px;border-radius:20px;cursor:pointer;font-size:12px;">⏹ 停止</button>
+                <label style="background:#16213e;color:#ffd700;border:1px solid #ffd700;padding:7px 14px;border-radius:20px;cursor:pointer;font-size:12px;">
+                    🖼️ 画像から<input type="file" accept="image/*" style="display:none;" id="qrfile-${winId}">
+                </label>
+            </div>
+            <div id="qrst-${winId}" style="font-size:11px;color:#aaa;margin-top:6px;text-align:center;">スキャン開始ボタンを押してください</div>
+            <div id="qrbox-${winId}" style="display:none;background:#1a1a2e;border:1px solid #00d4ff;border-radius:8px;padding:10px;margin-top:8px;width:100%;max-width:480px;box-sizing:border-box;">
+                <div style="font-size:11px;color:#00d4ff;margin-bottom:4px;">✅ スキャン結果:</div>
+                <div id="qrtxt-${winId}" style="font-size:13px;word-break:break-all;color:#fff;"></div>
+                <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                    <button id="qrcopy-${winId}" style="background:#0078d4;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:11px;">📋 コピー</button>
+                    <button id="qropen-${winId}" style="display:none;background:#27ae60;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:11px;">🌐 URLを開く</button>
+                </div>
+            </div>
+            <div id="qrhist-${winId}" style="width:100%;max-width:480px;margin-top:8px;"></div>
+        `;
+        let qStream = null, qTimer = null, qHistory = [], qLast = '';
+        const vid = body.querySelector(`#qrv-${winId}`);
+        const can = body.querySelector(`#qrc-${winId}`);
+        const st  = body.querySelector(`#qrst-${winId}`);
+        const box = body.querySelector(`#qrbox-${winId}`);
+        const txt = body.querySelector(`#qrtxt-${winId}`);
+        const hist= body.querySelector(`#qrhist-${winId}`);
+        const btnStart = body.querySelector(`#qrstart-${winId}`);
+        const btnStop  = body.querySelector(`#qrstop-${winId}`);
+        const fileInput= body.querySelector(`#qrfile-${winId}`);
+        const btnCopy  = body.querySelector(`#qrcopy-${winId}`);
+        const btnOpen  = body.querySelector(`#qropen-${winId}`);
+
+        function showResult(text) {
+            qHistory.unshift({ text, time: new Date().toLocaleTimeString() });
+            if (qHistory.length > 5) qHistory.pop();
+            box.style.display = 'block';
+            txt.innerText = text;
+            const isUrl = text.startsWith('http');
+            btnOpen.style.display = isUrl ? 'inline-block' : 'none';
+            st.innerText = '✅ 読み取り成功！';
+            hist.innerHTML = '<div style="font-size:11px;color:#aaa;margin-bottom:4px;">📋 履歴:</div>' +
+                qHistory.map(h => `<div style="background:#16213e;border-radius:4px;padding:3px 8px;margin-bottom:3px;font-size:11px;word-break:break-all;"><span style="color:#ffd700;">${h.time}</span> ${h.text}</div>`).join('');
+        }
+        async function scanFrame() {
+            if (!vid.videoWidth) return;
+            can.width = vid.videoWidth; can.height = vid.videoHeight;
+            can.getContext('2d').drawImage(vid, 0, 0);
+            try {
+                if ('BarcodeDetector' in window) {
+                    const bd = new BarcodeDetector({ formats: ['qr_code'] });
+                    const codes = await bd.detect(can);
+                    if (codes.length > 0 && codes[0].rawValue !== qLast) {
+                        qLast = codes[0].rawValue;
+                        showResult(qLast);
+                    }
+                }
+            } catch(e) {}
+        }
+        function start() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                st.innerText = '❌ カメラ非対応ブラウザです'; return;
+            }
+            if (!('BarcodeDetector' in window)) {
+                st.innerText = '⚠️ このブラウザはBarcodeDetector非対応です。\nChrome/Edge最新版をお試しください。\n画像ファイルからの読み取りも非対応になります。';
+            }
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+            .then(function(s) {
+                qStream = s; vid.srcObject = s; vid.play();
+                btnStart.disabled = true; btnStop.disabled = false;
+                st.innerText = '🔍 スキャン中...QRコードをカメラへ';
+                qTimer = setInterval(scanFrame, 400);
+            })
+            .catch(function(e) { st.innerText = '❌ カメラエラー: ' + e.message; });
+        }
+        function stop() {
+            if (qStream) { qStream.getTracks().forEach(t => t.stop()); qStream = null; }
+            if (qTimer) { clearInterval(qTimer); qTimer = null; }
+            vid.srcObject = null;
+            btnStart.disabled = false; btnStop.disabled = true;
+            st.innerText = '⏹ スキャン停止';
+        }
+        btnStart.onclick = start;
+        btnStop.onclick = stop;
+        btnCopy.onclick = () => {
+            navigator.clipboard.writeText(txt.innerText).then(() => st.innerText = '📋 コピー済み！').catch(() => { try { const r = document.createRange(); r.selectNode(txt); window.getSelection().removeAllRanges(); window.getSelection().addRange(r); document.execCommand('copy'); st.innerText = '📋 コピー済み！'; } catch(e) {} });
+        };
+        btnOpen.onclick = () => window.open(txt.innerText, '_blank');
+        fileInput.onchange = async function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = ev => {
+                img.onload = async () => {
+                    can.width = img.width; can.height = img.height;
+                    can.getContext('2d').drawImage(img, 0, 0);
+                    if ('BarcodeDetector' in window) {
+                        try {
+                            const bd = new BarcodeDetector({ formats: ['qr_code'] });
+                            const codes = await bd.detect(can);
+                            if (codes.length > 0) { showResult(codes[0].rawValue); }
+                            else { st.innerText = '❌ QRコードが見つかりません'; }
+                        } catch(err) { st.innerText = '❌ 読み取りエラー: ' + err.message; }
+                    } else { st.innerText = '❌ BarcodeDetector非対応ブラウザです'; }
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+        const winEl = document.getElementById('win-'+winId);
+        if (winEl) {
+            const closeBtn = winEl.querySelector('.x');
+            if (closeBtn) { const orig = closeBtn.onclick; closeBtn.onclick = () => { stop(); if(orig) orig(); else winEl.remove(); }; }
+        }
+    }
+
+    // ========== ⬛ QRコード作成アプリ (完全オフライン・Canvas直接描画) ==========
+    function initQRMakerApp(body, winId) {
+        body.style.background = '#1a0533';
+        body.style.color = 'white';
+        body.style.display = 'flex';
+        body.style.flexDirection = 'column';
+        body.style.alignItems = 'center';
+        body.style.padding = '12px';
+        body.style.boxSizing = 'border-box';
+        body.style.overflow = 'auto';
+        body.innerHTML = `
+            <h3 style="margin:5px 0;font-size:14px;">⬛ QRコード作成</h3>
+            <div style="width:100%;max-width:500px;">
+                <label style="font-size:12px;color:#ccc;">テキスト / URLを入力:</label>
+                <textarea id="qrminput-${winId}" placeholder="例: https://example.com または任意のテキスト" style="width:100%;height:65px;margin-top:4px;padding:8px;background:#2d1b5a;color:white;border:1px solid #7b5ea7;border-radius:6px;resize:none;font-size:13px;outline:none;box-sizing:border-box;"></textarea>
+                <div style="display:flex;gap:10px;margin:8px 0;flex-wrap:wrap;align-items:center;">
+                    <div><label style="font-size:11px;color:#ccc;">サイズ:</label>
+                    <select id="qrmsize-${winId}" style="background:#2d1b5a;color:white;border:1px solid #7b5ea7;border-radius:4px;padding:4px 8px;margin-left:4px;">
+                        <option value="128">小 128px</option><option value="200" selected>中 200px</option><option value="300">大 300px</option><option value="400">特大 400px</option>
+                    </select></div>
+                    <div><label style="font-size:11px;color:#ccc;">色:</label>
+                    <input type="color" id="qrmdark-${winId}" value="#000000" title="QR色" style="margin-left:4px;width:32px;height:28px;border:none;border-radius:4px;cursor:pointer;">
+                    <input type="color" id="qrmlight-${winId}" value="#ffffff" title="背景色" style="margin-left:2px;width:32px;height:28px;border:none;border-radius:4px;cursor:pointer;"></div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button id="qrmgen-${winId}" style="background:#7b2fff;color:white;border:none;padding:8px 20px;border-radius:20px;cursor:pointer;font-size:13px;flex:1;">✨ 生成</button>
+                    <button id="qrmdl-${winId}" disabled style="background:#27ae60;color:white;border:none;padding:8px 20px;border-radius:20px;cursor:pointer;font-size:13px;">⬇ DL</button>
+                    <button id="qrmclr-${winId}" style="background:#555;color:white;border:none;padding:8px 14px;border-radius:20px;cursor:pointer;font-size:13px;">🗑</button>
+                </div>
+                <div style="margin-top:12px;text-align:center;">
+                    <canvas id="qrmcan-${winId}" style="border-radius:8px;border:3px solid #7b2fff;display:none;max-width:100%;image-rendering:pixelated;"></canvas>
+                </div>
+                <div id="qrmst-${winId}" style="font-size:11px;color:#aaa;margin-top:8px;text-align:center;">テキストを入力して「✨ 生成」を押してください</div>
+                <div id="qrmhist-${winId}" style="margin-top:12px;"></div>
+            </div>
+        `;
+        let qrmHist = [];
+        const inputEl= body.querySelector(`#qrminput-${winId}`);
+        const sizeEl = body.querySelector(`#qrmsize-${winId}`);
+        const darkEl = body.querySelector(`#qrmdark-${winId}`);
+        const lightEl= body.querySelector(`#qrmlight-${winId}`);
+        const can    = body.querySelector(`#qrmcan-${winId}`);
+        const st     = body.querySelector(`#qrmst-${winId}`);
+        const histEl = body.querySelector(`#qrmhist-${winId}`);
+        const btnGen = body.querySelector(`#qrmgen-${winId}`);
+        const btnDL  = body.querySelector(`#qrmdl-${winId}`);
+        const btnClr = body.querySelector(`#qrmclr-${winId}`);
+
+        // ===== 完全オフラインQRコード生成エンジン（Reed-Solomon + QR v1-5対応） =====
+        function generateQR(text) {
+            // QR生成の核心: GF(256)演算 + Reed-Solomon誤り訂正 + QRマトリクス構築
+            const GF = (function() {
+                const exp = new Uint8Array(512), log = new Uint8Array(256);
+                let x = 1;
+                for (let i = 0; i < 255; i++) { exp[i] = x; log[x] = i; x = x < 128 ? x * 2 : (x * 2) ^ 285; }
+                for (let i = 255; i < 512; i++) exp[i] = exp[i - 255];
+                return {
+                    mul: (a, b) => a && b ? exp[log[a] + log[b]] : 0,
+                    div: (a, b) => a && b ? exp[(log[a] - log[b] + 255) % 255] : 0,
+                    exp: i => exp[i % 255],
+                    log: a => log[a]
+                };
+            })();
+            function rsGen(n) {
+                let g = [1];
+                for (let i = 0; i < n; i++) {
+                    const newG = new Array(g.length + 1).fill(0);
+                    const b = GF.exp(i);
+                    for (let j = 0; j < g.length; j++) { newG[j] ^= GF.mul(g[j], b); newG[j+1] ^= g[j]; }
+                    g = newG;
+                }
+                return g;
+            }
+            function rsEncode(data, n) {
+                const gen = rsGen(n);
+                const rem = new Array(n).fill(0);
+                for (const byte of data) {
+                    const coef = byte ^ rem.shift();
+                    rem.push(0);
+                    for (let i = 0; i < n; i++) rem[i] ^= GF.mul(gen[i], coef);
+                }
+                return rem;
+            }
+            // UTF-8エンコード
+            function toUTF8(str) {
+                const out = [];
+                for (let i = 0; i < str.length; i++) {
+                    let c = str.charCodeAt(i);
+                    if (c < 0x80) { out.push(c); }
+                    else if (c < 0x800) { out.push(0xC0|(c>>6)); out.push(0x80|(c&0x3F)); }
+                    else { out.push(0xE0|(c>>12)); out.push(0x80|((c>>6)&0x3F)); out.push(0x80|(c&0x3F)); }
+                }
+                return out;
+            }
+            // バージョン選択 (M誤り訂正)
+            const ecTable = [
+                null,
+                { size:21, ec:10, dc:16, blocks:1 },  // v1
+                { size:25, ec:16, dc:28, blocks:1 },   // v2
+                { size:29, ec:26, dc:44, blocks:1 },   // v3 (ECI使用時2ブロック)
+                { size:33, ec:18, dc:32, blocks:2 },   // v4
+                { size:37, ec:24, dc:43, blocks:2 },   // v5
+                { size:41, ec:16, dc:27, blocks:4 },   // v6
+                { size:45, ec:18, dc:31, blocks:4 },   // v7
+            ];
+            const bytes = toUTF8(text);
+            let ver = 1;
+            // バイトモードのデータビット数: 4(mode)+8(len)+8*n
+            for (let v = 1; v <= 7; v++) {
+                if (ecTable[v] && 4 + 8 + bytes.length * 8 <= ecTable[v].dc * 8) { ver = v; break; }
+                if (v === 7) { return null; } // テキストが長すぎる
+            }
+            const info = ecTable[ver];
+            const size = info.size;
+            // データコードワード構築
+            const bits = [];
+            const pushBits = (val, n) => { for (let i = n-1; i >= 0; i--) bits.push((val >> i) & 1); };
+            pushBits(0b0100, 4); // バイトモード
+            pushBits(bytes.length, 8);
+            for (const b of bytes) pushBits(b, 8);
+            // 終端・パディング
+            pushBits(0, Math.min(4, info.dc*8 - bits.length));
+            while (bits.length % 8) bits.push(0);
+            const cw = [];
+            for (let i = 0; i < bits.length; i += 8) {
+                let v2 = 0; for (let j = 0; j < 8; j++) v2 = (v2 << 1) | bits[i+j];
+                cw.push(v2);
+            }
+            const pad = [0xEC, 0x11];
+            while (cw.length < info.dc) cw.push(pad[(cw.length - (bits.length/8|0)) % 2]);
+            // Reed-Solomon
+            const ec = rsEncode(cw, info.ec);
+            const allCW = [...cw, ...ec];
+            // マトリクス初期化
+            const mat = Array.from({length: size}, () => new Array(size).fill(-1));
+            const used = Array.from({length: size}, () => new Array(size).fill(false));
+            function setMod(r, c, v) { mat[r][c] = v; used[r][c] = true; }
+            // ファインダーパターン
+            function finder(r, c) {
+                for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) {
+                    const v = (i === 0||i===6||j===0||j===6) ? 1 : (i>=2&&i<=4&&j>=2&&j<=4) ? 1 : 0;
+                    if (r+i < size && c+j < size) setMod(r+i, c+j, v);
+                }
+                // セパレーター
+                for (let k = -1; k <= 7; k++) {
+                    if (r+k>=0&&r+k<size&&c-1>=0) setMod(r+k, c-1, 0);
+                    if (r-1>=0&&c+k>=0&&c+k<size) setMod(r-1, c+k, 0);
+                }
+            }
+            finder(0,0); finder(0,size-7); finder(size-7,0);
+            // タイミングパターン
+            for (let i = 8; i < size-8; i++) { setMod(6, i, i%2===0?1:0); setMod(i, 6, i%2===0?1:0); }
+            // ダークモジュール
+            setMod(size-8, 8, 1);
+            // アライメントパターン (v2以上)
+            const alignPos = [[], [], [6,18], [6,22], [6,26], [6,30], [6,34], [6,22,38]];
+            if (ver >= 2 && alignPos[ver]) {
+                const ap = alignPos[ver];
+                for (const ar of ap) for (const ac of ap) {
+                    if (used[ar][ac]) continue;
+                    for (let di = -2; di <= 2; di++) for (let dj = -2; dj <= 2; dj++) {
+                        const v = (Math.abs(di)===2||Math.abs(dj)===2) ? 1 : (di===0&&dj===0) ? 1 : 0;
+                        setMod(ar+di, ac+dj, v);
+                    }
+                }
+            }
+            // フォーマット情報エリア予約
+            const fmtPos = [[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[7,8],[8,8],[8,7],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0],
+                            [8,size-1],[8,size-2],[8,size-3],[8,size-4],[8,size-5],[8,size-6],[8,size-7],
+                            [size-7,8],[size-6,8],[size-5,8],[size-4,8],[size-3,8],[size-2,8],[size-1,8]];
+            for (const [r,c] of fmtPos) used[r][c] = true;
+            // データ配置 (ジグザグ走査)
+            let bitIdx = 0;
+            const allBits = [];
+            for (const byte of allCW) for (let i = 7; i >= 0; i--) allBits.push((byte >> i) & 1);
+            // マスクパターン2: (i/2 + j/3) % 2 == 0
+            const mask = (r, c) => (Math.floor(r/2) + Math.floor(c/3)) % 2 === 0;
+            let up = true;
+            for (let col = size-1; col >= 1; col -= 2) {
+                if (col === 6) col--;
+                for (let i = 0; i < size; i++) {
+                    const row = up ? size-1-i : i;
+                    for (let k = 0; k < 2; k++) {
+                        const c = col - k;
+                        if (!used[row][c]) {
+                            const bit = bitIdx < allBits.length ? allBits[bitIdx++] : 0;
+                            mat[row][c] = bit ^ (mask(row, c) ? 1 : 0);
+                        }
+                    }
+                }
+                up = !up;
+            }
+            // フォーマット情報 (ECレベルM=01, マスク2=010 → 01 010 → 誤り訂正付き)
+            // ECM=01, mask2=010 → data=01010 → 計算値 (標準テーブル使用)
+            const fmtInfo = [0b101010000010010, 0b101000100100101, 0b101111001111100, 0b101101101001011,
+                             0b100010111111001, 0b100000011001110, 0b100111110010111, 0b100101010100000,
+                             0b111011111000100, 0b111001011110011, 0b111110110101010, 0b111100010011101,
+                             0b110011000101111, 0b110001100011000, 0b110110001000001, 0b110100101110110,
+                             0b001011010001001, 0b001001110111110, 0b001110011100111, 0b001100111010000,
+                             0b000011101100010, 0b000001001010101, 0b000110100001100, 0b000100000111011,
+                             0b011010101011111, 0b011000001101000, 0b011111100110001, 0b011101000000110,
+                             0b010010010110100, 0b010000110000011, 0b010111011011010, 0b010101111101101];
+            // ECM=01(M), mask=2 → index = (0b01 << 3) | 0b010 = 0b01010 = 10
+            const fi = fmtInfo[10];
+            const fmtBits = [];
+            for (let i = 14; i >= 0; i--) fmtBits.push((fi >> i) & 1);
+            const fp1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+            const fp2 = [[size-1,8],[size-2,8],[size-3,8],[size-4,8],[size-5,8],[size-6,8],[size-7,8],[8,size-8],[8,size-7],[8,size-6],[8,size-5],[8,size-4],[8,size-3],[8,size-2],[8,size-1]];
+            for (let i = 0; i < 15; i++) { mat[fp1[i][0]][fp1[i][1]] = fmtBits[i]; mat[fp2[i][0]][fp2[i][1]] = fmtBits[i]; }
+            return { mat, size };
+        }
+
+        function drawQR() {
+            const text = inputEl.value.trim();
+            if (!text) { st.innerText = '⚠️ テキストを入力してください'; return; }
+            const sz = parseInt(sizeEl.value);
+            const darkColor = darkEl.value;
+            const lightColor= lightEl.value;
+            st.innerText = '⏳ 生成中...';
+            setTimeout(() => {
+                try {
+                    const qr = generateQR(text);
+                    if (!qr) { st.innerText = '❌ テキストが長すぎます（最大約80文字）'; return; }
+                    const { mat, size } = qr;
+                    const cell = Math.max(1, Math.floor(sz / size));
+                    const margin = 4 * cell;
+                    const total = size * cell + margin * 2;
+                    can.width = total; can.height = total;
+                    can.style.display = 'inline-block';
+                    const ctx = can.getContext('2d');
+                    ctx.fillStyle = lightColor;
+                    ctx.fillRect(0, 0, total, total);
+                    for (let r = 0; r < size; r++) {
+                        for (let c = 0; c < size; c++) {
+                            ctx.fillStyle = mat[r][c] === 1 ? darkColor : lightColor;
+                            ctx.fillRect(margin + c * cell, margin + r * cell, cell, cell);
+                        }
+                    }
+                    btnDL.disabled = false;
+                    st.innerText = '✅ 生成完了！';
+                    qrmHist.unshift({ text: text.length > 28 ? text.slice(0,28)+'...' : text, time: new Date().toLocaleTimeString() });
+                    if (qrmHist.length > 4) qrmHist.pop();
+                    histEl.innerHTML = '<div style="font-size:11px;color:#aaa;margin-bottom:4px;">📋 生成履歴:</div>' +
+                        qrmHist.map(h => `<div style="background:#2d1b5a;border-radius:4px;padding:3px 8px;margin-bottom:3px;font-size:11px;word-break:break-all;border-left:3px solid #7b2fff;"><span style="color:#ffd700;">${h.time}</span> ${h.text}</div>`).join('');
+                } catch(e) { st.innerText = '❌ エラー: ' + e.message; }
+            }, 10);
+        }
+        btnGen.onclick = drawQR;
+        btnDL.onclick = () => {
+            if (can.style.display === 'none') return;
+            const a = document.createElement('a');
+            a.href = can.toDataURL('image/png');
+            a.download = 'qrcode_' + Date.now() + '.png';
+            a.click();
+            st.innerText = '⬇ ダウンロードしました！';
+        };
+        btnClr.onclick = () => {
+            inputEl.value = '';
+            can.style.display = 'none';
+            btnDL.disabled = true;
+            st.innerText = 'クリアしました';
+        };
     }
 
     function renderExplorer(b) {
@@ -2226,6 +2718,9 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
                 // アプリや壁紙のロード状態をユーザーごとに上書き
                 installedIds = JSON.parse(localStorage.getItem(prefix + 'my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver', 'babanuki'];
                 if(!installedIds.includes('train')) installedIds.push('train');
+                if(!installedIds.includes('camera')) installedIds.push('camera');
+                if(!installedIds.includes('qrscan')) installedIds.push('qrscan');
+                if(!installedIds.includes('qrmaker')) installedIds.push('qrmaker');
                 const savedWall = localStorage.getItem(prefix + 'my_wall');
                 if (savedWall) {
                     document.getElementById('wall').style.backgroundImage = `url(${savedWall})`;
