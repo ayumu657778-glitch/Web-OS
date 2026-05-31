@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <!-- 先ほど作った manifest.json を読み込む -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Apple（iOS/iPadOS）用の設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="マイアプリ">
+<link rel="apple-touch-icon" href="icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web OS - Pro Web Enabled (Upload Support)</title>
@@ -2781,6 +2789,17 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
             }
         }
     })();
+</script>
+    <script>
+  // ブラウザがサービスワーカーに対応しているかチェック
+  if ('serviceWorker' in navigator) {
+    // ページが読み込まれたら sw.js を登録する
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker 登録成功！', reg))
+        .catch(err => console.error('Service Worker 登録失敗...', err));
+    });
+  }
 </script>
 </body>
 </html>
