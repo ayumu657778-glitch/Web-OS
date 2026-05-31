@@ -1,6 +1,6 @@
 {
-  "name": "マイアプリ",
-  "short_name": "マイアプリ",
+  "name": "仮想os",
+  "short_name": "仮想os",
   "start_url": "仮想os.html",
   "display": "standalone",
   "background_color": "#ffffff",
