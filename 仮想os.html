@@ -705,6 +705,56 @@ cv = document.getElementById('drv-cv'); if(!cv) return; var ctx = cv.getContext(
  
 = 0, envRain = false, envNight = false, wiperAngle = 0, wiperDir = 1, frame = 0;
                     var engineOn = false; var idlingStop = false;
+                    /* ▼音声機能追加▼ */
+                    var audioCtx = null, engineOscillator = null, engineGain = null, engineGain2 = null;
+                    var lastEngineVolume = 0, lastBrakeTime = 0, lastBlowTime = -Infinity;
+                    var soundInitialized = false;
+                    function initAudio() {
+                        if (soundInitialized) return;
+                        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        soundInitialized = true;
+                    }
+                    function playEngineSound(rpmVal, isAccelerating) {
+                        initAudio(); if (!audioCtx) return;
+                        var baseFreq = 40 + (rpmVal / 7500) * 150;
+                        if (!engineOscillator) {
+                            engineOscillator = audioCtx.createOscillator();
+                            engineGain = audioCtx.createGain();
+                            engineGain2 = audioCtx.createGain();
+                            engineOscillator.type = 'sawtooth';
+                            engineOscillator.connect(engineGain); engineGain.connect(engineGain2);
+                            engineGain2.connect(audioCtx.destination);
+                            engineOscillator.start();
+                        }
+                        engineOscillator.frequency.setTargetAtTime(baseFreq, audioCtx.currentTime, 0.05);
+                        var vol = isAccelerating ? 0.08 : 0.04;
+                        var targetVol = Math.min(0.15, vol * (rpmVal / 3000));
+                        engineGain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.1);
+                        lastEngineVolume = targetVol;
+                    }
+                    function stopEngineSound() { if (engineOscillator) { engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2); } }
+                    function playBrakeSound() {
+                        initAudio(); if (!audioCtx || Date.now() - lastBrakeTime < 50) return;
+                        lastBrakeTime = Date.now();
+                        var brakeOsc = audioCtx.createOscillator();
+                        var brakeGain = audioCtx.createGain();
+                        var brakeFilter = audioCtx.createBiquadFilter();
+                        brakeOsc.type = 'triangle'; brakeOsc.frequency.value = 180 + Math.random() * 80;
+                        brakeGain.gain.value = 0.06;
+                        brakeFilter.type = 'highpass'; brakeFilter.frequency.value = 150;
+                        brakeOsc.connect(brakeFilter); brakeFilter.connect(brakeGain); brakeGain.connect(audioCtx.destination);
+                        brakeOsc.start(); brakeOsc.stop(audioCtx.currentTime + 0.08);
+                    }
+                    function playBlowSound() {
+                        initAudio(); if (!audioCtx || Date.now() - lastBlowTime < 500) return;
+                        lastBlowTime = Date.now();
+                        var blowOsc = audioCtx.createOscillator(), blowGain = audioCtx.createGain();
+                        blowOsc.type = 'square'; blowOsc.frequency.value = 220;
+                        blowGain.gain.value = 0.12; blowOsc.connect(blowGain); blowGain.connect(audioCtx.destination);
+                        blowOsc.start(); blowGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                        blowOsc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.4); blowOsc.stop(audioCtx.currentTime + 0.5);
+                    }
+                    /* ▲音声機能追加▲ */
                     /* ▼今回追加▼ */
                     var isAT = true, gNum = 1, engTemp = 80, isBlown = false;
    
@@ -732,10 +782,11 @@ idlingStop = false;
 var btn = document.getElementById('btn-engine');
                         if(btn) { btn.style.background = engineOn ? "#2ecc71" : "#e74c3c"; btn.innerText = engineOn ?
 "ENGINE ON" : "ENGINE START"; }
+                        if (engineOn) playEngineSound(rpm, false); else stopEngineSound();
                     };
 window.drvSteer = function(d) { steerDir = d; };
                     window.drvAccel = function(b) { isAccel = b; };
-window.drvBrake = function(b) { isBrake = b; };
+window.drvBrake = function(b) { isBrake = b; if (b && Math.abs(speed) > 3) playBrakeSound(); };
                     window.drvSetGear = function(g) {
                         if(Math.abs(speed) > 3) return;
 gear = g;
@@ -876,6 +927,7 @@ engineOn = false;
                                 if(hs) { hs.innerText = "FIRE!!"; hs.style.color = "red";
 }
                                 alert("エンジンが焼き付きました！(ブロー)");
+                                playBlowSound();
 }
                         } else if (isBlown) {
                             engineOn = false;
@@ -1041,6 +1093,9 @@ ctx.beginPath(); ctx.arc(200 + Math.random()*20, 120 + Math.random()*20, 30 + Ma
 ctx.arc(200 + Math.random()*10, 140 + Math.random()*10, 20 + Math.random()*30, 0, Math.PI*2); ctx.fill();
 }
                         /* ▲今回追加箇所▲ */
+                        /* ▼音声更新処理▼ */
+                        if (engineOn && !isBlown) playEngineSound(rpm, isAccel);
+                        /* ▲音声更新処理▲ */
 
                         ctx.restore();
 requestAnimationFrame(loop);
@@ -1249,6 +1304,68 @@ requestAnimationFrame(loop);
   for(var ri=0;ri<30;ri++) rainDrops.push({x:Math.random()*600,y:Math.random()*280,s:Math.random()*8+6});
   for(var si=0;si<50;si++) snowFlakes.push({x:Math.random()*600,y:Math.random()*280,r:Math.random()*3+1,vx:Math.random()*0.8-0.4});
 
+  /* ▼音声機能追加▼ */
+  var audioCtx = null, motorOscillator = null, motorGain = null, motorGain2 = null;
+  var lastPowerNotch = 0, lastBrakeNotch = 0, brakeSoundTime = -Infinity, hornSoundTime = -Infinity, ebSoundTime = -Infinity;
+  var soundInitialized = false;
+
+  function initAudio() {
+    if (soundInitialized) return;
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    soundInitialized = true;
+  }
+
+  function playMotorSound(power, braking, currentSpeed) {
+    initAudio(); if (!audioCtx) return;
+    var baseFreq = 100 + (currentSpeed / 100) * 150 + power * 30;
+    if (!motorOscillator) {
+      motorOscillator = audioCtx.createOscillator();
+      motorGain = audioCtx.createGain();
+      motorGain2 = audioCtx.createGain();
+      motorOscillator.type = 'triangle';
+      motorOscillator.connect(motorGain); motorGain.connect(motorGain2);
+      motorGain2.connect(audioCtx.destination);
+      motorOscillator.start();
+    }
+    motorOscillator.frequency.setTargetAtTime(baseFreq, audioCtx.currentTime, 0.08);
+    var vol = power > 0 ? 0.06 : braking > 0 ? 0.03 : 0.02;
+    motorGain.gain.setTargetAtTime(vol * (1 + power * 0.02), audioCtx.currentTime, 0.1);
+  }
+
+  function playBrakeSound() {
+    initAudio(); if (!audioCtx || Date.now() - brakeSoundTime < 100) return;
+    brakeSoundTime = Date.now();
+    var brakeOsc = audioCtx.createOscillator();
+    var brakeGain = audioCtx.createGain();
+    var brakeFilter = audioCtx.createBiquadFilter();
+    brakeOsc.type = 'sine'; brakeOsc.frequency.value = 150 + Math.random() * 60;
+    brakeGain.gain.value = 0.08;
+    brakeFilter.type = 'highpass'; brakeFilter.frequency.value = 120;
+    brakeOsc.connect(brakeFilter); brakeFilter.connect(brakeGain); brakeGain.connect(audioCtx.destination);
+    brakeOsc.start(); brakeOsc.stop(audioCtx.currentTime + 0.12);
+  }
+
+  function playHornSound() {
+    initAudio(); if (!audioCtx || Date.now() - hornSoundTime < 200) return;
+    hornSoundTime = Date.now();
+    var hornOsc = audioCtx.createOscillator(), hornGain = audioCtx.createGain();
+    hornOsc.type = 'sine'; hornOsc.frequency.value = 280;
+    hornGain.gain.value = 0.12; hornOsc.connect(hornGain); hornGain.connect(audioCtx.destination);
+    hornOsc.start(); hornGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    hornOsc.stop(audioCtx.currentTime + 0.4);
+  }
+
+  function playEBSound() {
+    initAudio(); if (!audioCtx || Date.now() - ebSoundTime < 300) return;
+    ebSoundTime = Date.now();
+    var ebOsc = audioCtx.createOscillator(), ebGain = audioCtx.createGain();
+    ebOsc.type = 'square'; ebOsc.frequency.value = 240;
+    ebGain.gain.value = 0.14; ebOsc.connect(ebGain); ebGain.connect(audioCtx.destination);
+    ebOsc.start(); ebGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+    ebOsc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5); ebOsc.stop(audioCtx.currentTime + 0.6);
+  }
+  /* ▲音声機能追加▲ */
+
   var stations=[
     {name:'起点駅', pos:0, limit:0},
     {name:'北公園駅', pos:700, limit:75},
@@ -1309,6 +1426,7 @@ requestAnimationFrame(loop);
     var el2=document.getElementById('trn-bn'); if(el2) el2.innerText='切';
     highlightBtn(['trn-p0','trn-p1','trn-p2','trn-p3','trn-p4','trn-p5'],n>0?'trn-p'+n:'trn-p0','#00e676');
     highlightBtn(['trn-b0','trn-b3','trn-b4','trn-b6','trn-b8','trn-eb'],'','#ff6d00');
+    if (n > 0) playMotorSound(n, 0, speed);
   };
   window.trnSetB=function(n){
     brakeNotch=n; powerNotch=0; isEB=false;
@@ -1317,14 +1435,16 @@ requestAnimationFrame(loop);
     var bmap={0:'trn-b0',3:'trn-b3',4:'trn-b4',6:'trn-b6',8:'trn-b8'};
     highlightBtn(['trn-b0','trn-b3','trn-b4','trn-b6','trn-b8','trn-eb'],bmap[n]||'','#ff6d00');
     highlightBtn(['trn-p0','trn-p1','trn-p2','trn-p3','trn-p4','trn-p5'],'','#00e676');
+    if (n > 0) playBrakeSound();
   };
   window.trnSetEB=function(){
     isEB=true; brakeNotch=9; powerNotch=0;
     var el=document.getElementById('trn-bn'); if(el){el.innerText='EB!!!'; el.style.color='#ff1744';}
     var el2=document.getElementById('trn-pn'); if(el2) el2.innerText='切';
     highlightBtn(['trn-b0','trn-b3','trn-b4','trn-b6','trn-b8','trn-eb'],'trn-eb','#ff6d00');
+    playEBSound();
   };
-  window.trnHorn=function(){ hornActive=12; };
+  window.trnHorn=function(){ hornActive=12; playHornSound(); };
   window.trnToggleDoor=function(){
     if(speed>0.8){showPopup('⚠️ 速度が0でないと\\n扉は操作できません！','#ff1744'); return;}
     if(!stoppedAtStation&&!doorOpen){showPopup('⚠️ 停車位置ではありません\\nもう少し進んでください','#ff6d00'); return;}
@@ -1738,6 +1858,14 @@ requestAnimationFrame(loop);
     drawScene();
     drawSpeedometer();
     updateHUD();
+    /* ▼音声更新▼ */
+    playMotorSound(powerNotch, brakeNotch, speed);
+    if (brakeNotch > 0 && brakeNotch !== lastBrakeNotch) {
+      playBrakeSound();
+      lastBrakeNotch = brakeNotch;
+    }
+    lastPowerNotch = powerNotch;
+    /* ▲音声更新▲ */
     requestAnimationFrame(loop);
   }
 
@@ -1759,6 +1887,8 @@ requestAnimationFrame(loop);
         { id:'camera', n:'カメラ', i:'📷', t:'camera_app' },
         { id:'qrscan', n:'QR読み取り', i:'🔍', t:'qrscan_app' },
         { id:'qrmaker', n:'QR作成', i:'⬛', t:'qrmaker_app' },
+        { id:'barcode_scan', n:'バーコード読取', i:'📊', t:'barcode_scan_app' },
+        { id:'barcode_make', n:'バーコード作成', i:'📇', t:'barcode_make_app' },
         { id:'flight', n:'飛行機シミュ', i:'✈️', t:'html', c:`
 <div style="background:#12121f;color:#e0e0e0;height:100%;display:flex;flex-direction:column;font-family:'Segoe UI',sans-serif;user-select:none;overflow:hidden;touch-action:none;">
   <div style="position:relative;flex:1;background:#000;overflow:hidden;min-height:0;">
@@ -1839,6 +1969,56 @@ requestAnimationFrame(loop);
     var joyActive=false, joyOX=0, joyOY=0, joyX=0, joyY=0;
     var thrActive=false, thrOY=0, thrSV=0;
 
+    /* ▼音声機能追加▼ */
+    var audioCtx = null, engineOsc = null, engineGain = null, engineGain2 = null;
+    var lastEngineThrottle = 0, stallWarnTime = -Infinity, crashSoundTime = -Infinity;
+    var soundInitialized = false;
+
+    function initAudio() {
+      if (soundInitialized) return;
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      soundInitialized = true;
+    }
+
+    function playEngineSound(throttle, speed) {
+      initAudio(); if (!audioCtx) return;
+      var baseFreq = 80 + throttle * 200 + (speed / 280) * 150;
+      if (!engineOsc) {
+        engineOsc = audioCtx.createOscillator();
+        engineGain = audioCtx.createGain();
+        engineGain2 = audioCtx.createGain();
+        engineOsc.type = 'sawtooth';
+        engineOsc.connect(engineGain); engineGain.connect(engineGain2);
+        engineGain2.connect(audioCtx.destination);
+        engineOsc.start();
+      }
+      engineOsc.frequency.setTargetAtTime(baseFreq, audioCtx.currentTime, 0.06);
+      var vol = throttle > 0.05 ? 0.1 : 0.03;
+      engineGain.gain.setTargetAtTime(vol * (0.5 + throttle * 0.5), audioCtx.currentTime, 0.08);
+    }
+
+    function playStallWarning() {
+      initAudio(); if (!audioCtx || Date.now() - stallWarnTime < 300) return;
+      stallWarnTime = Date.now();
+      var stallOsc = audioCtx.createOscillator(), stallGain = audioCtx.createGain();
+      stallOsc.type = 'square'; stallOsc.frequency.value = 800;
+      stallGain.gain.value = 0.15; stallOsc.connect(stallGain); stallGain.connect(audioCtx.destination);
+      stallOsc.start(); stallGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      stallOsc.stop(audioCtx.currentTime + 0.15);
+    }
+
+    function playCrashSound() {
+      initAudio(); if (!audioCtx || Date.now() - crashSoundTime < 500) return;
+      crashSoundTime = Date.now();
+      var crashOsc = audioCtx.createOscillator(), crashGain = audioCtx.createGain();
+      crashOsc.type = 'triangle'; crashOsc.frequency.value = 150;
+      crashGain.gain.value = 0.2; crashOsc.connect(crashGain); crashGain.connect(audioCtx.destination);
+      crashOsc.start(); crashGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+      crashOsc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.6);
+      crashOsc.stop(audioCtx.currentTime + 0.8);
+    }
+    /* ▲音声機能追加▲ */
+
     function setWarn(t,n){ S.warnText=t; S.warnTimer=n||120; warnEl.innerText=t; warnEl.style.display=t?'block':'none'; }
 
     // ジョイスティック
@@ -1857,7 +2037,7 @@ requestAnimationFrame(loop);
     function updateThrUI(){ thrFill.style.height=(S.throttle*100)+'%'; thrLine.style.bottom=(S.throttle*100)+'%'; var e=document.getElementById('flt-thr'); if(e) e.innerText=Math.round(S.throttle*100); }
 
     // ボタン
-    window.fltEngine=function(){ if(S.crashed)return; S.engineOn=!S.engineOn; engBtn.style.background=S.engineOn?'#27ae60':'#c0392b'; engBtn.innerText=S.engineOn?'ENGINE■':'ENGINE▶'; };
+    window.fltEngine=function(){ if(S.crashed)return; S.engineOn=!S.engineOn; engBtn.style.background=S.engineOn?'#27ae60':'#c0392b'; engBtn.innerText=S.engineOn?'ENGINE■':'ENGINE▶'; if(S.engineOn) playEngineSound(0, 0); };
     window.fltGear=function(){ if(S.altitude>5){S.gearDown=!S.gearDown;}else{setWarn('⚠️地上でギア操作不可',60);} var e=document.getElementById('flt-gear'); if(e){e.innerText=S.gearDown?'▼DOWN':'▲UP'; e.style.color=S.gearDown?'#00ff88':'#ffdd00';} };
     var flapSteps=[0,15,30,45];
     window.fltFlap=function(){ var i=flapSteps.indexOf(S.flap); S.flap=flapSteps[(i+1)%flapSteps.length]; var e=document.getElementById('flt-flap'); if(e) e.innerText=S.flap+'°'; };
@@ -1892,7 +2072,7 @@ requestAnimationFrame(loop);
       var flapL=1+S.flap*0.008;
       var lift=S.speed*S.speed*0.00012*Math.cos(S.roll*Math.PI/180)*flapL;
       S.stall=(S.speed<60&&S.altitude>5);
-      if(S.stall){lift*=0.1;setWarn('⚠️STALL!失速！',3);}
+      if(S.stall){lift*=0.1;setWarn('⚠️STALL!失速！',3);playStallWarning();}
       var pf=Math.sin(S.pitch*Math.PI/180)*S.speed*0.08;
       S.vspeed+=(lift-9.81*dt+pf)*dt*8;
       S.vspeed=Math.max(-60,Math.min(60,S.vspeed));
@@ -1902,7 +2082,7 @@ requestAnimationFrame(loop);
           S.altitude=0;S.vspeed=0;S.speed*=0.97;S.landed=true;
           if(S.speed<2){S.speed=0;S.pitch=0;S.roll=0;}
         } else {
-          S.crashed=true; setWarn('💥CRASH！墜落！',99999); S.speed=0;S.vspeed=0;S.altitude=0;
+          S.crashed=true; setWarn('💥CRASH！墜落！',99999); S.speed=0;S.vspeed=0;S.altitude=0;playCrashSound();
         }
       } else { S.landed=false; }
       var hr=S.yaw*Math.PI/180, mps=S.speed*0.514;
@@ -2048,6 +2228,9 @@ requestAnimationFrame(loop);
       drawScene();
       drawADI();
       updateHUD();
+      /* ▼音声更新▼ */
+      if (S.engineOn && !S.crashed) playEngineSound(S.throttle, S.speed);
+      /* ▲音声更新▲ */
       requestAnimationFrame(loop);
     }
     requestAnimationFrame(loop);
@@ -2063,8 +2246,22 @@ let installedIds = JSON.parse(localStorage.getItem('my_apps')) || ['edge', 'eins
     if(!installedIds.includes('camera')) installedIds.push('camera');
     if(!installedIds.includes('qrscan')) installedIds.push('qrscan');
     if(!installedIds.includes('qrmaker')) installedIds.push('qrmaker');
+                if(!installedIds.includes('barcode_scan')) installedIds.push('barcode_scan');
+                if(!installedIds.includes('barcode_make')) installedIds.push('barcode_make');
     if(!installedIds.includes('flight')) installedIds.push('flight');
 let uploadedFiles = [];
+let currentUser = 'Administrator';
+
+function loadUserFiles() {
+    const prefix = currentUser === 'Administrator' ? '' : (currentUser === 'Guest' ? 'guest_' : currentUser + '_');
+    const savedFiles = localStorage.getItem(prefix + 'uploaded_files');
+    uploadedFiles = savedFiles ? JSON.parse(savedFiles) : [];
+}
+
+function saveUserFiles() {
+    const prefix = currentUser === 'Administrator' ? '' : (currentUser === 'Guest' ? 'guest_' : currentUser + '_');
+    localStorage.setItem(prefix + 'uploaded_files', JSON.stringify(uploadedFiles));
+}
 
     window.onload = () => {
         const savedWall = localStorage.getItem('my_wall');
@@ -2133,6 +2330,7 @@ document.body.appendChild(win);
             body.innerHTML = `<div class="browser-bar"><input id="in-${id}" value="${a.u}"><button onclick="navigate('${id}')">Go</button></div>
                 <iframe id="if-${id}" src="${a.u}" class="full" style="height:calc(100% - 38px);"></iframe>`;
 } else if (a.t === 'explorer') {
+            loadUserFiles();
             renderExplorer(body);
 } else if (a.t === 'calc') {
             initCalc(body);
@@ -2173,6 +2371,10 @@ body.getElementsByTagName('script');
             for(let s of scs) eval(s.innerHTML);
         } else if (a.t === 'camera_app') {
             initCameraApp(body, id);
+        } else if (a.t === 'barcode_scan_app') {
+            initBarcodeScanApp(body, id);
+        } else if (a.t === 'barcode_make_app') {
+            initBarcodeMakeApp(body, id);
         } else if (a.t === 'qrscan_app') {
             initQRScanApp(body, id);
         } else if (a.t === 'qrmaker_app') {
@@ -2664,6 +2866,7 @@ body.getElementsByTagName('script');
 
 
     function renderExplorer(b) {
+        loadUserFiles();
         b.innerHTML = `
             <div class="upload-area">
                 <label 
@@ -2673,7 +2876,7 @@ class="upload-label">
                     <input type="file" style="display:none" onchange="handleFileUpload(event, this)">
                 </label>
                 <span style="font-size:11px;
-color:#666;">C:\\Users\\Admin\\Documents</span>
+color:#666;">C:\\Users\\${currentUser}\\Documents</span>
             </div>
             <div class="exp-list" style="overflow-y:auto;
 height:calc(100% - 45px);">
@@ -2693,7 +2896,14 @@ height:calc(100% - 45px);">
         const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = (ev) => {
-            uploadedFiles.push({ name: file.name, type: file.type, data: ev.target.result, icon: file.type.startsWith('image/') ? '🖼️' : '📄' });
+            uploadedFiles.push({ 
+                name: file.name, 
+                type: file.type, 
+                data: ev.target.result, 
+                icon: file.type.startsWith('image/') ? '🖼️' : '📄',
+                owner: currentUser
+            });
+            saveUserFiles();
      
  
        updateFileList(); input.value = ''; 
@@ -2703,16 +2913,32 @@ height:calc(100% - 45px);">
 
     function updateFileList() {
         const container = document.getElementById('custom-files'); if (!container) return;
-        container.innerHTML = uploadedFiles.map((f, index) => `
-            <div class="exp-row" ondblclick="viewFile(${index})">${f.icon} ${f.name}</div>
-         `).join('');
+        // 現在のユーザーのファイルのみを表示
+        const userFiles = uploadedFiles.filter((f) => {
+            return f.owner === currentUser;
+        });
+        container.innerHTML = userFiles.map((f) => {
+            const actualIndex = uploadedFiles.indexOf(f);
+            return `<div class="exp-row" ondblclick="viewFile(${actualIndex})">${f.icon} ${f.name}</div>`;
+        }).join('');
 }
 
     window.viewFile = (index) => {
+        // セキュリティチェック：現在のユーザーのファイルのみ許可
+        if (index < 0 || index >= uploadedFiles.length) {
+            alert('❌ アクセスが拒否されました。');
+            return;
+        }
+        
         const f = uploadedFiles[index];
-const previewWin = document.createElement('div');
+        if (!f || !f.name || f.owner !== currentUser) {
+            alert('❌ このファイルにアクセスする権限がありません。');
+            return;
+        }
+        
+        const previewWin = document.createElement('div');
         previewWin.className = 'win'; previewWin.style.width = '400px'; previewWin.style.height = '400px'; previewWin.style.top = '100px'; previewWin.style.left = '150px';
-previewWin.style.zIndex = ++zIndex;
+        previewWin.style.zIndex = ++zIndex;
         let content = '';
         if (f.type.startsWith('image/')) { content = `<img src="${f.data}" style="max-width:100%; max-height:100%; display:block; margin:auto;">`;
 } 
@@ -2754,6 +2980,251 @@ const win = document.getElementById('win-' + id); if (win) win.remove(); refresh
         let url = document.getElementById('in-' + id).value;
 if (!url.startsWith('http')) url = 'https://' + url;
         document.getElementById('if-' + id).src = url;
+}
+
+
+// ========== 📊 バーコード読み取りアプリ ==========
+function initBarcodeScanApp(body, winId) {
+    body.style.background = '#1a1a2e';
+    body.style.color = 'white';
+    body.style.display = 'flex';
+    body.style.flexDirection = 'column';
+    body.style.alignItems = 'center';
+    body.style.padding = '10px';
+    body.style.boxSizing = 'border-box';
+    body.style.overflow = 'auto';
+    body.innerHTML = `
+        <h3 style="margin:5px 0;font-size:14px;">📊 バーコード読み取り</h3>
+        <video id="barcv-${winId}" autoplay playsinline muted style="width:100%;max-width:300px;border-radius:8px;background:#000;max-height:300px;object-fit:cover;border:2px solid #0078d4;"></video>
+        <canvas id="barcan-${winId}" style="display:none;"></canvas>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center;">
+            <button id="barstart-${winId}" style="background:#0078d4;color:white;border:none;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;">▶ 開始</button>
+            <button id="barstop-${winId}" disabled style="background:#555;color:white;border:none;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;">⏹ 停止</button>
+        </div>
+        <div id="barst-${winId}" style="font-size:11px;color:#aaa;margin-top:8px;text-align:center;">待機中...</div>
+        <div id="barres-${winId}" style="background:#222;border:1px solid #444;border-radius:8px;padding:10px;margin-top:10px;min-height:60px;max-height:120px;overflow-y:auto;width:100%;font-size:11px;font-family:monospace;"></div>
+    `;
+    let stream = null;
+    const vid = body.querySelector(`#barcv-${winId}`);
+    const can = body.querySelector(`#barcan-${winId}`);
+    const st = body.querySelector(`#barst-${winId}`);
+    const res = body.querySelector(`#barres-${winId}`);
+    const btnStart = body.querySelector(`#barstart-${winId}`);
+    const btnStop = body.querySelector(`#barstop-${winId}`);
+    let scanning = false;
+
+    function start() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            st.innerText = '❌ このブラウザはカメラに対応していません'; return;
+        }
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
+        .then(function(s) {
+            stream = s;
+            vid.srcObject = s;
+            vid.play();
+            btnStart.disabled = true;
+            btnStop.disabled = false;
+            scanning = true;
+            st.innerText = '✅ スキャン中...';
+            scan();
+        })
+        .catch(function(e) {
+            st.innerText = '❌ ' + e.name;
+        });
+    }
+
+    function stop() {
+        scanning = false;
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+        vid.srcObject = null;
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        st.innerText = '⏹ 停止中';
+    }
+
+    async function scan() {
+        if (!scanning) return;
+        if (!vid.videoWidth) {
+            requestAnimationFrame(scan);
+            return;
+        }
+        if (window.BarcodeDetector) {
+            try {
+                const barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'ean_13', 'ean_8', 'code_39', 'upc_a', 'upc_e'] });
+                const barcodes = await barcodeDetector.detect(vid);
+                if (barcodes.length > 0) {
+                    barcodes.forEach(bc => {
+                        const html = `<strong>${bc.format}:</strong> ${bc.rawValue}<br>`;
+                        if (!res.innerHTML.includes(bc.rawValue)) {
+                            res.innerHTML = html + res.innerHTML;
+                        }
+                    });
+                    st.innerText = '✅ ' + barcodes.length + '件検出';
+                }
+            } catch (e) {
+                st.innerText = '⚠️ ' + e.message;
+            }
+        } else {
+            st.innerText = '❌ BarcodeDetectorが利用できません';
+            return;
+        }
+        requestAnimationFrame(scan);
+    }
+
+    btnStart.onclick = start;
+    btnStop.onclick = stop;
+}
+
+// ========== 📇 バーコード作成アプリ ==========
+function initBarcodeMakeApp(body, winId) {
+    body.style.background = '#1a1a2e';
+    body.style.color = 'white';
+    body.style.display = 'flex';
+    body.style.flexDirection = 'column';
+    body.style.padding = '10px';
+    body.style.boxSizing = 'border-box';
+    body.style.overflow = 'auto';
+    
+    // Code128 エンコード関数
+    function encodeCode128(str) {
+        const START_CODE_B = 104;
+        const STOP_CODE = 106;
+        let codes = [START_CODE_B];
+        let checksum = START_CODE_B;
+        let position = 0;
+
+        for (let i = 0; i < str.length; i++) {
+            const code = str.charCodeAt(i);
+            codes.push(code - 32);
+            checksum += (position + 1) * (code - 32);
+            position++;
+        }
+        checksum = checksum % 103;
+        codes.push(checksum);
+        codes.push(STOP_CODE);
+        return codes;
+    }
+
+    // Code128パターン定義
+    const CODE128_PATTERNS = [
+        '11011001100', '11001101100', '11001100110', '10010011000',
+        '10010001100', '10001001100', '10011001000', '10011000100',
+        '10001100100', '11010011000', '11001011000', '11001001010',
+        '11010010010', '11010010100', '11010100100', '11010101000',
+        '11010100010', '10100011000', '10001011000', '10001000110',
+        '10110001000', '10001101000', '10001100010', '11000101000',
+        '11000100010', '10110111000', '10110001110', '10001011110',
+        '10111011000', '10111000110', '10001100111', '11101011000',
+        '11100101110', '11010111000', '11011100100', '11001101110',
+        '11010111010', '10110101000', '10110100010', '11010110010',
+        '11010110001', '10101011000', '10100110100', '10010110100',
+        '10010110010', '10110010100', '10110010010', '10011010100',
+        '10011010010', '10110110100', '10110110010', '11010110110',
+        '11010110011', '11010011010', '11101101110', '11101001110',
+        '11100101011', '11101101011', '11101101001', '11100110101',
+        '11100110011', '11011011000', '11011001100', '11001101100',
+        '10010011100', '10010001110', '10001001110', '10110111100',
+        '10110001111', '10001110111', '10111011100', '10111001111',
+        '11100111011', '100010111011', '101100101011', '101001101011',
+        '101010011011', '101011001011', '101011100101', '100101011011',
+        '101001011011', '101010011001', '101101001101', '100101101101',
+        '101001101101', '101010110101', '101011010101', '101010101101',
+        '101011011001', '100110101101', '101001110101', '101010111001',
+        '101110101001', '101101011001', '100110111001', '100111011001',
+        '101101110001', '101001011101', '101010110111', '101110110101',
+        '101110110001', '101101011101', '101110101101', '101110101011',
+        '101110100101', '101101110101', '101101110011', '100101011101'
+    ];
+
+    body.innerHTML = `
+        <h3 style="margin:5px 0;font-size:14px;">📇 バーコード作成</h3>
+        <div style="margin:10px 0;">
+            <label style="font-size:12px;display:block;margin-bottom:5px;">テキスト:</label>
+            <input id="bartext-${winId}" type="text" placeholder="例: HELLO123" style="width:100%;padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:#fff;font-size:12px;box-sizing:border-box;" value="HELLO123">
+        </div>
+        <button id="barmake-${winId}" style="background:#27ae60;color:white;border:none;padding:10px 20px;border-radius:20px;cursor:pointer;font-size:13px;width:100%;">生成</button>
+        <div id="barbarcnt-${winId}" style="margin-top:15px;text-align:center;"></div>
+        <canvas id="barbarcan-${winId}" style="border:2px solid #444;border-radius:8px;display:none;max-width:100%;margin-top:10px;"></canvas>
+        <button id="bardl-${winId}" style="background:#0078d4;color:white;border:none;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:12px;margin-top:10px;display:none;width:100%;">💾 ダウンロード</button>
+        <div id="barinfo-${winId}" style="font-size:11px;color:#999;margin-top:10px;background:#222;border-radius:4px;padding:8px;"></div>
+    `;
+
+    const txtInput = body.querySelector(`#bartext-${winId}`);
+    const btnMake = body.querySelector(`#barmake-${winId}`);
+    const cntDiv = body.querySelector(`#barbarcnt-${winId}`);
+    const canvas = body.querySelector(`#barbarcan-${winId}`);
+    const btnDL = body.querySelector(`#bardl-${winId}`);
+    const infoDiv = body.querySelector(`#barinfo-${winId}`);
+
+    function generateBarcode() {
+        const text = txtInput.value.toUpperCase().trim();
+        if (!text) {
+            cntDiv.innerHTML = '⚠️ テキストを入力してください';
+            return;
+        }
+
+        try {
+            const codes = encodeCode128(text);
+            const barWidth = 2, barHeight = 100;
+            const quietZone = 10;
+            
+            let barcodeWidth = 0;
+            for (let code of codes) {
+                if (code < CODE128_PATTERNS.length) {
+                    const pattern = CODE128_PATTERNS[code];
+                    barcodeWidth += pattern.split('').length;
+                }
+            }
+            barcodeWidth *= barWidth;
+            const totalWidth = barcodeWidth + quietZone * 2;
+            const totalHeight = barHeight + 50;
+
+            canvas.width = totalWidth;
+            canvas.height = totalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+            let x = quietZone;
+            ctx.fillStyle = 'black';
+            for (let code of codes) {
+                if (code < CODE128_PATTERNS.length) {
+                    const pattern = CODE128_PATTERNS[code];
+                    for (let bit of pattern.split('')) {
+                        if (bit === '1') {
+                            ctx.fillRect(x, 0, barWidth, barHeight);
+                        }
+                        x += barWidth;
+                    }
+                }
+            }
+
+            ctx.fillStyle = 'black';
+            ctx.font = '14px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, totalWidth / 2, barHeight + 35);
+
+            canvas.style.display = 'block';
+            btnDL.style.display = 'block';
+            cntDiv.innerHTML = '✅ バーコード生成完了！';
+            infoDiv.innerHTML = `形式: Code128<br>テキスト: ${text}<br>サイズ: ${totalWidth}x${totalHeight}px`;
+        } catch (e) {
+            cntDiv.innerHTML = '❌ エラー: ' + e.message;
+        }
+    }
+
+    function download() {
+        if (canvas.style.display !== 'none') {
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'barcode_' + Date.now() + '.png';
+            link.click();
+        }
+    }
+
+    btnMake.onclick = generateBarcode;
+    btnDL.onclick = download;
+    txtInput.onkeypress = (e) => { if (e.key === 'Enter') generateBarcode(); };
 }
 
     function initCalc(b) {
@@ -2939,6 +3410,7 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
                     <button id="mu-show-create" style="background: transparent; border: 1px solid rgba(255,255,255,0.4); color: #fff; margin-bottom: 15px; font-size: 12px; padding: 6px; border-radius:4px; width:100%; cursor:pointer;">＋ 新規ユーザーを作成</button>
                     <input type="password" id="mu-pwd" placeholder="パスワードを入力">
                     <button id="mu-login-btn">ログイン</button>
+                    <button id="mu-guest-btn" style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4); margin-top: 8px; width: 100%; padding: 10px; border-radius: 4px; font-size: 14px; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">👤 ゲストとしてログイン</button>
                     <div class="login-error" id="mu-error"></div>
                 </div>
 
@@ -3004,6 +3476,7 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
 
             document.getElementById('mu-login-btn').onclick = attemptLogin;
             document.getElementById('mu-pwd').onkeypress = (e) => { if(e.key === 'Enter') attemptLogin(); };
+            document.getElementById('mu-guest-btn').onclick = loginAsGuest;
 
             function attemptLogin() {
                 const name = select.value;
@@ -3016,10 +3489,17 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
                 }
             }
 
+            function loginAsGuest() {
+                loginAs('Guest');
+            }
+
             function loginAs(name) {
                 currentUser = name;
                 localStorage.setItem('current_user', name);
-                const prefix = name === 'Administrator' ? '' : name + '_';
+                const prefix = name === 'Administrator' ? '' : (name === 'Guest' ? 'guest_' : name + '_');
+                
+                // ユーザーのファイルを読み込む
+                loadUserFiles();
                 
                 // アプリや壁紙のロード状態をユーザーごとに上書き
                 installedIds = JSON.parse(localStorage.getItem(prefix + 'my_apps')) || ['edge', 'einstein', 'store', 'pc', 'calc', 'set', 'othello', 'shogi', 'jinsei', 'typing', 'study', 'driver', 'babanuki'];
@@ -3027,6 +3507,8 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
                 if(!installedIds.includes('camera')) installedIds.push('camera');
                 if(!installedIds.includes('qrscan')) installedIds.push('qrscan');
                 if(!installedIds.includes('qrmaker')) installedIds.push('qrmaker');
+                if(!installedIds.includes('barcode_scan')) installedIds.push('barcode_scan');
+                if(!installedIds.includes('barcode_make')) installedIds.push('barcode_make');
                 if(!installedIds.includes('flight')) installedIds.push('flight');
                 const savedWall = localStorage.getItem(prefix + 'my_wall');
                 if (savedWall) {
@@ -3050,6 +3532,10 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
                 };
 
                 window.changeOSPassword = () => {
+                    if (name === 'Guest') {
+                        alert('ゲストユーザーではパスワード変更はできません');
+                        return;
+                    }
                     const oldPwd = document.getElementById('change-old-pwd').value; 
                     const newPwd = document.getElementById('change-new-pwd').value;
                     const msg = document.getElementById('change-pwd-msg'); 
@@ -3080,7 +3566,125 @@ screen.style.opacity = '0'; setTimeout(() => screen.remove(), 500); }
                     logoutBtn.onclick = () => location.reload();
                     startDiv.lastElementChild.prepend(logoutBtn);
                 }
-                logoutBtn.innerText = `🚪 ログアウト (${name})`;
+                logoutBtn.innerText = name === 'Guest' ? `👤 ログアウト (ゲスト)` : `🚪 ログアウト (${name})`;
+
+                // ▼複数のお知らせを表示▼
+                // ゲストユーザーはお知らせを表示しない
+                // 初回ログイン時のみお知らせを表示
+                const hasSeenNotice = localStorage.getItem(prefix + 'seen_notice');
+                if (name !== 'Guest' && !hasSeenNotice) {
+                    localStorage.setItem(prefix + 'seen_notice', 'true');
+                    const announcements = [
+                        {
+                            emoji: '🎉',
+                            title: 'デベロッパー募集',
+                            message: 'デベロッパーになりたい方へ<br/><br/>このテストに参加してくださいませ！<br/>皆さまの貴重なご意見をお聞かせください。',
+                            buttons: [
+                                { text: '📝 テストを開始する', url: 'https://forms.gle/sgTvpZSzur4yiidy9', color: '#ffffff' }
+                            ]
+                        },
+                        {
+                            emoji: '📋',
+                            title: 'アンケート',
+                            message: 'この Web OS をより豊かにするために<br/><br/>アンケートをお願いします！<br/>皆さまのご意見が開発に活かされます。',
+                            buttons: [
+                                { text: '✍️ アンケートに答える', url: 'https://forms.gle/1TB3CnmXnGgsSGs18', color: '#ffffff' }
+                            ]
+                        },
+                        {
+                            emoji: '💡',
+                            title: 'ウェルカム',
+                            message: 'Web OS へようこそ！<br/><br/>豊富なアプリで楽しい体験を<br/>お楽しみください。',
+                            buttons: []
+                        }
+                    ];
+
+                    let announcementIndex = 0;
+                    function showNextAnnouncement() {
+                        if (announcementIndex >= announcements.length) return;
+                        
+                        const announce = announcements[announcementIndex];
+                        announcementIndex++;
+
+                        const noticeDiv = document.createElement('div');
+                        noticeDiv.id = 'login-notice-modal-' + announcementIndex;
+                        noticeDiv.style.cssText = `
+                            position: fixed;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            border-radius: 12px;
+                            padding: 30px;
+                            max-width: 500px;
+                            width: 90%;
+                            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+                            z-index: 99999;
+                            color: white;
+                            font-family: 'Segoe UI', Tahoma, sans-serif;
+                            text-align: center;
+                        `;
+                        
+                        let buttonsHTML = '';
+                        announce.buttons.forEach(btn => {
+                            buttonsHTML += `
+                                <a href="${btn.url}" target="_blank" style="
+                                    display: inline-block;
+                                    background: ${btn.color};
+                                    color: #667eea;
+                                    padding: 12px 30px;
+                                    border-radius: 6px;
+                                    text-decoration: none;
+                                    font-weight: bold;
+                                    margin: 10px 5px;
+                                    cursor: pointer;
+                                    transition: 0.3s;
+                                    font-size: 14px;
+                                " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                    ${btn.text}
+                                </a>
+                            `;
+                        });
+
+                        noticeDiv.innerHTML = `
+                            <div style="font-size: 28px; margin-bottom: 15px;">${announce.emoji}</div>
+                            <div style="font-size: 20px; font-weight: bold; margin-bottom: 15px;">${announce.title}</div>
+                            <div style="font-size: 16px; margin-bottom: 20px; line-height: 1.6;">
+                                ${announce.message}
+                            </div>
+                            ${buttonsHTML}
+                            <button id="close-notice-btn-${announcementIndex}" style="
+                                display: inline-block;
+                                background: rgba(255,255,255,0.2);
+                                color: white;
+                                padding: 12px 30px;
+                                border-radius: 6px;
+                                border: 2px solid white;
+                                text-decoration: none;
+                                font-weight: bold;
+                                margin: 10px 5px;
+                                cursor: pointer;
+                                transition: 0.3s;
+                                font-size: 14px;
+                            " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                                ${announcementIndex >= announcements.length ? '✕ 閉じる' : '次へ →'}
+                            </button>
+                        `;
+                        
+                        document.body.appendChild(noticeDiv);
+                        document.getElementById('close-notice-btn-' + announcementIndex).addEventListener('click', () => {
+                            document.getElementById('login-notice-modal-' + announcementIndex).remove();
+                            if (announcementIndex < announcements.length) {
+                                showNextAnnouncement();
+                            }
+                        });
+                    }
+
+                    setTimeout(() => {
+                        showNextAnnouncement();
+                    }, 600);
+                }
+                // ▲複数のお知らせを表示▲
 
                 // 画面ロック解除アニメーション
                 screen.style.opacity = '0';
