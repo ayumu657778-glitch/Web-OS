@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>人間確認</title>
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+<script>
+function captchaSuccess() {
+  window.location.href = "/仮想os/";
+}
+</script>
+
+</head>
+
+<body>
+
+<h2>人間確認</h2>
+<p>続けるには確認してください。</p>
+
+<div class="g-recaptcha"
+     data-sitekey="6LevfWQtAAAAAOY7RzucKH64FEt2zRvVCMclxuID"
+     data-callback="captchaSuccess">
+</div>
+
+</body>
+</html>
